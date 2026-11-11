@@ -1,0 +1,36 @@
+name: Build Windows DMX Companion
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'companion-win/**'
+      - '.github/workflows/build-companion.yml'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: companion-win/go.mod
+
+      - name: Run unit tests
+        working-directory: companion-win
+        run: go test -v ./...
+
+      - name: Build Windows executable
+        working-directory: companion-win
+        run: go build -ldflags="-s -w" -o QuizMaster-DMX-Companion.exe .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuizMaster-DMX-Companion-Windows
+          path: companion-win/QuizMaster-DMX-Companion.exe
