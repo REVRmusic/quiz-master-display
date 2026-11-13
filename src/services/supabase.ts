@@ -217,6 +217,46 @@ class SupabaseService {
       return [];
     }
   }
+
+  public async clearHistory(): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from(HISTORY_TABLE)
+        .delete()
+        .neq('id', '');
+      return !error;
+    } catch {
+      return false;
+    }
+  }
+
+  public subscribeToHistory(onHistoryChange: () => void): () => void {
+    let historyChannel: RealtimeChannel | null = null;
+    try {
+      historyChannel = supabase
+        .channel(`room_${HISTORY_TABLE}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: HISTORY_TABLE,
+          },
+          () => {
+            onHistoryChange();
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('[Supabase] History subscription error', e);
+    }
+
+    return () => {
+      if (historyChannel) {
+        historyChannel.unsubscribe();
+      }
+    };
+  }
 }
 
 export const supabaseService = new SupabaseService();

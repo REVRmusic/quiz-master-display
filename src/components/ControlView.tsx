@@ -61,6 +61,14 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
       setIsCloudConnected(connected);
     });
 
+    const unsubState = syncService.onState((newState) => {
+      setState(newState);
+    });
+
+    const unsubHistory = syncService.onHistory((newHistory) => {
+      setHistory(newHistory);
+    });
+
     const unsubAction = syncService.onAction((action: SyncAction) => {
       if (action.type === 'PONG') {
         setIsDisplayConnected(true);
@@ -71,6 +79,8 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
       syncService.stopHeartbeat();
       unsubConn();
       unsubCloud();
+      unsubState();
+      unsubHistory();
       unsubAction();
     };
   }, []);

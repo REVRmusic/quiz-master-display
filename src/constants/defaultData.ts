@@ -68,6 +68,6 @@ export const INITIAL_QUIZ_STATE: QuizState = {
   
   currentRound: 1,
   winnerPlayerId: null,
-  lastUpdated: Date.now(),
+  lastUpdated: 0,
   dmxConfig: DEFAULT_DMX_CONFIG,
 };

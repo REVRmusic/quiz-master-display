@@ -10,11 +10,13 @@ class SyncService {
   private channel: BroadcastChannel | null = null;
   private actionListeners: ((action: SyncAction) => void)[] = [];
   private stateListeners: ((state: QuizState) => void)[] = [];
+  private historyListeners: ((history: WinnerHistoryItem[]) => void)[] = [];
   private isDisplayConnected: boolean = false;
   private displayConnectionListeners: ((connected: boolean) => void)[] = [];
   private heartbeatInterval: number | null = null;
   private lastPongReceived: number = 0;
   private lastProcessedActionTime: number = 0;
+  private lastLocalSavedAt: number = 0;
   private saveDebounceTimer: number | null = null;
 
   constructor() {
@@ -47,17 +49,19 @@ class SyncService {
   private async initSupabaseSync() {
     // Attempt initial pull from Supabase
     const { state: cloudState } = await supabaseService.loadSession();
-    if (cloudState && cloudState.lastUpdated > (this.loadState()?.lastUpdated || 0)) {
-      this.saveLocalState(cloudState);
-      this.notifyStateListeners(cloudState);
+    const hasLocalState = Boolean(localStorage.getItem(STORAGE_KEY));
+    if (cloudState && (!hasLocalState || cloudState.lastUpdated > (this.loadState()?.lastUpdated || 0))) {
+      const merged = { ...INITIAL_QUIZ_STATE, ...cloudState };
+      this.saveLocalState(merged);
+      this.notifyStateListeners(merged);
     }
 
     // Subscribe to remote updates via Supabase WebSockets
     supabaseService.subscribeToSession((remoteState, remoteAction) => {
-      const localState = this.loadState();
-      if (!localState || remoteState.lastUpdated >= localState.lastUpdated) {
-        this.saveLocalState(remoteState);
-        this.notifyStateListeners(remoteState);
+      if (remoteState.lastUpdated !== this.lastLocalSavedAt) {
+        const merged = { ...INITIAL_QUIZ_STATE, ...remoteState };
+        this.saveLocalState(merged);
+        this.notifyStateListeners(merged);
       }
 
       if (remoteAction) {
@@ -67,6 +71,24 @@ class SyncService {
           this.actionListeners.forEach((l) => l(remoteAction));
         }
       }
+    });
+
+    // Pull & subscribe to cloud history
+    const refreshCloudHistory = async () => {
+      const cloudHistory = await supabaseService.loadHistory();
+      if (cloudHistory.length > 0 || !localStorage.getItem(HISTORY_KEY)) {
+        try {
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(cloudHistory));
+        } catch (e) {
+          console.error('Error writing history to localStorage', e);
+        }
+        this.notifyHistoryListeners(cloudHistory);
+      }
+    };
+
+    await refreshCloudHistory();
+    supabaseService.subscribeToHistory(() => {
+      refreshCloudHistory();
     });
   }
 
@@ -130,8 +152,19 @@ class SyncService {
     };
   }
 
+  public onHistory(callback: (history: WinnerHistoryItem[]) => void): () => void {
+    this.historyListeners.push(callback);
+    return () => {
+      this.historyListeners = this.historyListeners.filter((l) => l !== callback);
+    };
+  }
+
   private notifyStateListeners(state: QuizState) {
     this.stateListeners.forEach((l) => l(state));
+  }
+
+  private notifyHistoryListeners(history: WinnerHistoryItem[]) {
+    this.historyListeners.forEach((l) => l(history));
   }
 
   public loadState(): QuizState {
@@ -159,7 +192,9 @@ class SyncService {
 
   public saveState(state: QuizState, action?: SyncAction) {
     if (typeof window === 'undefined') return;
-    const enriched = { ...state, lastUpdated: Date.now() };
+    const now = Date.now();
+    this.lastLocalSavedAt = now;
+    const enriched = { ...state, lastUpdated: now };
     this.saveLocalState(enriched);
     this.sendRawAction({ type: 'STATE_UPDATE', payload: enriched });
 
@@ -168,12 +203,18 @@ class SyncService {
       clearTimeout(this.saveDebounceTimer);
     }
     this.saveDebounceTimer = window.setTimeout(() => {
+      this.saveDebounceTimer = null;
       supabaseService.saveSession(enriched, action);
     }, 150);
   }
 
   public sendAction(action: SyncAction) {
     this.sendRawAction(action);
+    // Cancel any pending debounced save so it doesn't overwrite last_action
+    if (this.saveDebounceTimer) {
+      clearTimeout(this.saveDebounceTimer);
+      this.saveDebounceTimer = null;
+    }
     // Also push action to Supabase for multi-device sync
     const currentState = this.loadState();
     supabaseService.saveSession(currentState, action);
@@ -210,6 +251,8 @@ class SyncService {
 
     if (history.length > 0) {
       supabaseService.saveHistoryItem(history[0]);
+    } else {
+      supabaseService.clearHistory();
     }
   }
 }
