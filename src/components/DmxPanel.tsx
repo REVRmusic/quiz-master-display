@@ -28,7 +28,8 @@ interface CompanionLog {
 
 interface CompanionStatus {
   supabaseConnected: boolean;
-  sunliteWindow: string;
+  daslightWindow?: string;
+  sunliteWindow?: string;
   activeWindow: string;
   playerColors: Record<number, string>;
   dmxEnabled: boolean;
@@ -143,7 +144,7 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
     }
   };
 
-  // 3-second countdown helper to map a shortcut directly into Sunlite's "Keyboard shortcut" prompt
+  // 3-second countdown helper to map a shortcut directly into Daslight's "Keyboard shortcut" prompt
   const startDelayedMapSend = (key: string, label: string) => {
     if (!key.trim() || countdownInfo) return;
     let remaining = 3;
@@ -156,12 +157,12 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
       } else {
         clearInterval(interval);
         setCountdownInfo(null);
-        triggerTestKey(key, `Mapping Sunlite (${label})`);
+        triggerTestKey(key, `Mapping Daslight (${label})`);
       }
     }, 1000);
   };
 
-  const updateMapping = (playerIndex: number, color: 'blue' | 'green' | 'red', value: string) => {
+  const updateMapping = (playerIndex: number, color: 'green' | 'blue' | 'yellow' | 'red', value: string) => {
     const nextMappings = [...dmx.playerMappings];
     nextMappings[playerIndex] = {
       ...nextMappings[playerIndex],
@@ -215,9 +216,9 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
                 <Lightbulb size={20} />
               </div>
               <div>
-                <h3 className="font-bold text-sm text-white">Pilotage DMX / Sunlite Temps Réel</h3>
+                <h3 className="font-bold text-sm text-white">Pilotage DMX Daslight Virtual Controller 3</h3>
                 <p className="text-xs text-slate-400">
-                  Synchronise automatiquement les PAR LEDs sur votre PC Lumières Windows
+                  Synchronise automatiquement les PAR LEDs sur votre PC Lumières Windows (DVC 3)
                 </p>
               </div>
             </div>
@@ -263,18 +264,18 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
             {companionConnected && (
               <span
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-semibold ${
-                  companionStatus?.sunliteWindow
+                  companionStatus?.daslightWindow || companionStatus?.sunliteWindow
                     ? 'bg-sky-950/40 border-sky-700/50 text-sky-300'
                     : 'bg-amber-950/40 border-amber-700/50 text-amber-300'
                 }`}
               >
-                {companionStatus?.sunliteWindow ? (
+                {companionStatus?.daslightWindow || companionStatus?.sunliteWindow ? (
                   <>
-                    <CheckCircle2 size={12} /> Sunlite : {companionStatus.sunliteWindow}
+                    <CheckCircle2 size={12} /> Daslight : {companionStatus?.daslightWindow || companionStatus?.sunliteWindow}
                   </>
                 ) : (
                   <>
-                    <AlertTriangle size={12} /> Fenêtre Sunlite non détectée
+                    <AlertTriangle size={12} /> Fenêtre Daslight non détectée
                   </>
                 )}
               </span>
@@ -290,7 +291,7 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
             </span>
             <h4 className="font-bold text-sm text-white mt-2">App Companion Windows</h4>
             <p className="text-[11px] text-slate-300 mt-0.5 leading-snug">
-              Exécutable autonome (7 Mo, sans installation) à lancer sur le PC où tourne Sunlite.
+              Exécutable autonome (sans installation) à lancer sur le PC où tourne Daslight Virtual Controller 3.
             </p>
           </div>
 
@@ -318,14 +319,14 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
         </div>
       </div>
 
-      {/* COUNTDOWN OVERLAY BANNER FOR SUNLITE MAPPING */}
+      {/* COUNTDOWN OVERLAY BANNER FOR DASLIGHT MAPPING */}
       {countdownInfo && (
         <div className="bg-amber-500/20 border border-amber-400 rounded-2xl p-4 flex items-center justify-between gap-4 animate-pulse">
           <div className="flex items-center gap-3">
             <Timer size={24} className="text-amber-300" />
             <div>
               <p className="font-bold text-sm text-amber-200">
-                Cliquez maintenant dans la case « Raccourci clavier » de Sunlite !
+                Cliquez maintenant dans la case « Raccourci clavier » de Daslight 3 !
               </p>
               <p className="text-xs text-amber-100/80">
                 Envoi automatique de <strong>[{countdownInfo.key}]</strong> ({countdownInfo.label}) dans {countdownInfo.sec}s...
@@ -374,7 +375,7 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
           }`}
         >
           <BookOpen size={15} />
-          <span>Guide Configuration Sunlite</span>
+          <span>Guide Configuration Daslight 3</span>
         </button>
       </div>
 
@@ -401,15 +402,15 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
           {/* Virtual PAR LEDs Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {state.players.map((player, idx) => {
-              const color = getPlayerDmxColor(player, state.winScore);
+              const color = getPlayerDmxColor(player, state.winScore, state.answeringPlayerId);
               const meta = getDmxColorMeta(color);
-              const mapping = dmx.playerMappings[idx] || { blue: '', green: '', red: '' };
+              const mapping = dmx.playerMappings[idx] || { green: '', blue: '', yellow: '', red: '' };
               const activeKey = mapping[color];
 
               return (
                 <div
                   key={player.id}
-                  className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col items-center text-center gap-3"
+                  className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col items-center text-center gap-3 shadow-lg"
                 >
                   <div className="w-full flex items-center justify-between text-xs text-slate-400">
                     <span className="font-bold text-white truncate">{player.name}</span>
@@ -419,11 +420,13 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
                   {/* Glowing PAR LED Circle */}
                   <div
                     className={`w-20 h-20 rounded-full border-4 border-slate-800 flex flex-col items-center justify-center transition-all duration-300 ${
-                      color === 'green'
-                        ? 'bg-emerald-500 text-slate-950'
+                      color === 'yellow'
+                        ? 'bg-amber-400 text-slate-950 font-black animate-pulse'
+                        : color === 'blue'
+                        ? 'bg-sky-500 text-slate-950 font-bold'
                         : color === 'red'
-                        ? 'bg-rose-600 text-white'
-                        : 'bg-sky-500 text-slate-950'
+                        ? 'bg-rose-600 text-white font-bold'
+                        : 'bg-emerald-500 text-slate-950 font-bold'
                     }`}
                     style={{ boxShadow: meta.glowStyle }}
                   >
@@ -433,32 +436,43 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
                     )}
                   </div>
 
-                  {/* Quick Test Buttons */}
-                  <div className="w-full grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-800/80">
+                  <p className="text-[11px] text-slate-400 -mt-1 font-medium">{meta.description}</p>
+
+                  {/* Quick Test Buttons (4 states: Vert, Bleu, Jaune, Rouge) */}
+                  <div className="w-full grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-800/80">
                     <button
                       type="button"
-                      onClick={() => triggerTestKey(mapping.blue, `Test ${player.name} BLEU`)}
-                      disabled={!mapping.blue}
-                      className="py-1.5 rounded-lg bg-sky-950/60 hover:bg-sky-900 border border-sky-700/50 text-sky-300 text-[11px] font-bold disabled:opacity-30 transition-colors"
-                      title={`Envoyer touche [${mapping.blue}]`}
-                    >
-                      Bleu [{mapping.blue || '-'}]
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => triggerTestKey(mapping.green, `Test ${player.name} VERT`)}
+                      onClick={() => triggerTestKey(mapping.green, `Test ${player.name} VERT (Défaut)`)}
                       disabled={!mapping.green}
-                      className="py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-700/50 text-emerald-300 text-[11px] font-bold disabled:opacity-30 transition-colors"
-                      title={`Envoyer touche [${mapping.green}]`}
+                      className="py-1.5 px-1 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-700/50 text-emerald-300 text-[10px] font-bold disabled:opacity-30 transition-colors"
+                      title={`Envoyer touche [${mapping.green}] (Par défaut / 0 pt)`}
                     >
                       Vert [{mapping.green || '-'}]
                     </button>
                     <button
                       type="button"
-                      onClick={() => triggerTestKey(mapping.red, `Test ${player.name} ROUGE`)}
+                      onClick={() => triggerTestKey(mapping.blue, `Test ${player.name} BLEU (Point)`)}
+                      disabled={!mapping.blue}
+                      className="py-1.5 px-1 rounded-lg bg-sky-950/60 hover:bg-sky-900 border border-sky-700/50 text-sky-300 text-[10px] font-bold disabled:opacity-30 transition-colors"
+                      title={`Envoyer touche [${mapping.blue}] (Point marqué)`}
+                    >
+                      Bleu [{mapping.blue || '-'}]
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => triggerTestKey(mapping.yellow, `Test ${player.name} JAUNE (Réponse)`)}
+                      disabled={!mapping.yellow}
+                      className="py-1.5 px-1 rounded-lg bg-amber-950/60 hover:bg-amber-900 border border-amber-600/50 text-amber-300 text-[10px] font-bold disabled:opacity-30 transition-colors"
+                      title={`Envoyer touche [${mapping.yellow}] (En réponse / Buzz)`}
+                    >
+                      Jaune [{mapping.yellow || '-'}]
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => triggerTestKey(mapping.red, `Test ${player.name} ROUGE (Éliminé)`)}
                       disabled={!mapping.red}
-                      className="py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 border border-rose-700/50 text-rose-300 text-[11px] font-bold disabled:opacity-30 transition-colors"
-                      title={`Envoyer touche [${mapping.red}]`}
+                      className="py-1.5 px-1 rounded-lg bg-rose-950/60 hover:bg-rose-900 border border-rose-700/50 text-rose-300 text-[10px] font-bold disabled:opacity-30 transition-colors"
+                      title={`Envoyer touche [${mapping.red}] (Éliminé)`}
                     >
                       Rouge [{mapping.red || '-'}]
                     </button>
@@ -512,13 +526,13 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
         </div>
       )}
 
-      {/* TAB 2: KEY MAPPINGS & SUNLITE OPTIONS */}
+      {/* TAB 2: KEY MAPPINGS & DASLIGHT OPTIONS */}
       {activeTab === 'mapping' && (
         <div className="space-y-5">
           <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs text-slate-300">
               Cliquez dans une case et appuyez sur la touche voulue (ex: <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300">A</kbd>, <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300">F2</kbd>, <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300">Ctrl+Shift+A</kbd>).
-              Utilisez <strong>3s</strong> pour envoyer la touche dans Sunlite pendant la capture du raccourci !
+              Utilisez <strong>3s</strong> pour envoyer la touche dans Daslight 3 pendant la capture du raccourci !
             </p>
             <button
               type="button"
@@ -529,14 +543,14 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
             </button>
           </div>
 
-          {/* Players Mapping Table */}
+          {/* Players Mapping Table (4 colors: Vert, Bleu, Jaune, Rouge) */}
           <div className="space-y-2.5">
             {state.players.map((player, idx) => {
-              const mapping = dmx.playerMappings[idx] || { blue: '', green: '', red: '' };
+              const mapping = dmx.playerMappings[idx] || { green: '', blue: '', yellow: '', red: '' };
               return (
                 <div
                   key={player.id}
-                  className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 grid grid-cols-1 md:grid-cols-4 gap-3 items-center"
+                  className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-center"
                 >
                   <div className="font-bold text-sm text-white flex items-center gap-2">
                     <span className="w-6 h-6 rounded-lg bg-slate-800 text-purple-400 font-mono text-xs flex items-center justify-center">
@@ -545,13 +559,22 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
                     <span className="truncate">{player.name}</span>
                   </div>
 
-                  {(['blue', 'green', 'red'] as const).map((col) => {
-                    const colorTitle = col === 'blue' ? 'Bleu (Actif)' : col === 'green' ? 'Vert (Gagnant)' : 'Rouge (Éliminé)';
+                  {(['green', 'blue', 'yellow', 'red'] as const).map((col) => {
+                    const colorTitle =
+                      col === 'green'
+                        ? 'Vert (Défaut / Joueur)'
+                        : col === 'blue'
+                        ? 'Bleu (Point / Gagnant)'
+                        : col === 'yellow'
+                        ? 'Jaune (Réponse / Buzz)'
+                        : 'Rouge (Éliminé)';
                     const borderColor =
-                      col === 'blue'
-                        ? 'border-sky-700/60 focus:border-sky-400'
-                        : col === 'green'
+                      col === 'green'
                         ? 'border-emerald-700/60 focus:border-emerald-400'
+                        : col === 'blue'
+                        ? 'border-sky-700/60 focus:border-sky-400'
+                        : col === 'yellow'
+                        ? 'border-amber-600/60 focus:border-amber-400'
                         : 'border-rose-700/60 focus:border-rose-400';
 
                     return (
@@ -578,7 +601,7 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
                             onClick={() => startDelayedMapSend(mapping[col], `${player.name} ${colorTitle}`)}
                             disabled={!mapping[col]}
                             className="px-2 py-1 rounded bg-slate-800 hover:bg-purple-600 text-[10px] font-bold text-slate-300 hover:text-white disabled:opacity-30 transition-colors"
-                            title="Envoyer dans 3 secondes (pratique pour capturer la touche dans Sunlite)"
+                            title="Envoyer dans 3 secondes (pratique pour capturer la touche dans Daslight)"
                           >
                             3s
                           </button>
@@ -653,19 +676,19 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
           {/* Safety & Focus Options */}
           <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 flex items-center gap-2">
-              <Shield size={15} /> Options de Focus Windows (Sunlite)
+              <Shield size={15} /> Options de Focus Windows (Daslight Virtual Controller 3)
             </h4>
 
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs font-bold text-white">Focus automatique sur Sunlite avant envoi</p>
+                <p className="text-xs font-bold text-white">Focus automatique sur Daslight avant envoi</p>
                 <p className="text-[11px] text-slate-400">
-                  Si Sunlite a perdu le focus par erreur, le companion réactive sa fenêtre automatiquement.
+                  Si la fenêtre Daslight Virtual Controller 3 a perdu le focus par erreur, le companion réactive sa fenêtre automatiquement.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => onUpdateDmxConfig({ ...dmx, autoFocusSunlite: !dmx.autoFocusSunlite })}
+                onClick={() => onUpdateDmxConfig({ ...dmx, autoFocusSunlite: !dmx.autoFocusSunlite, autoFocusDaslight: !dmx.autoFocusSunlite })}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
                   dmx.autoFocusSunlite ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400'
                 }`}
@@ -676,15 +699,15 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
 
             <div className="flex items-center justify-between gap-4 pt-2 border-t border-slate-800">
               <div>
-                <p className="text-xs font-bold text-white">Sécurité stricte : ignorer si Sunlite n'est pas actif</p>
+                <p className="text-xs font-bold text-white">Sécurité stricte : ignorer si Daslight n'est pas actif</p>
                 <p className="text-[11px] text-slate-400">
-                  Empêche d'envoyer les touches dans un autre logiciel si Sunlite n'est pas ouvert au premier plan.
+                  Empêche d'envoyer les touches dans un autre logiciel si Daslight n'est pas ouvert au premier plan.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() =>
-                  onUpdateDmxConfig({ ...dmx, requireSunliteFocus: !dmx.requireSunliteFocus })
+                  onUpdateDmxConfig({ ...dmx, requireSunliteFocus: !dmx.requireSunliteFocus, requireDaslightFocus: !dmx.requireSunliteFocus })
                 }
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
                   dmx.requireSunliteFocus ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'
@@ -697,29 +720,32 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
         </div>
       )}
 
-      {/* TAB 3: STEP-BY-STEP SUNLITE SETUP GUIDE */}
+      {/* TAB 3: STEP-BY-STEP DASLIGHT 3 SETUP GUIDE */}
       {activeTab === 'guide' && (
         <div className="space-y-4 text-xs text-slate-300 leading-relaxed">
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-3">
             <h4 className="font-bold text-sm text-white flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center">1</span>
-              Créer les Pages / Boutons indépendants dans Sunlite (Suite 2 ou Suite 3)
+              Structure des Scènes dans Daslight Virtual Controller 3
             </h4>
             <p>
-              Pour que chaque PAR LED (Joueur 1, 2, 3, 4) change de couleur <strong>indépendamment des autres</strong> (ex: Joueur 1 en Vert pendant que Joueurs 2 et 3 restent en Bleu et Joueur 4 en Rouge) :
+              Dans <strong>Daslight Virtual Controller 3</strong> (mode Live), créez une colonne par joueur (groupe exclusif) avec les 4 boutons de scènes correspondants aux 4 états du quiz :
             </p>
             <ul className="list-disc list-inside space-y-1.5 text-slate-300 pl-2">
               <li>
-                Créez <strong>4 Pages distinctes</strong> dans Sunlite : <code className="text-purple-300">Joueur 1</code>, <code className="text-purple-300">Joueur 2</code>, <code className="text-purple-300">Joueur 3</code>, <code className="text-purple-300">Joueur 4</code> (ou 1 seule page contenant 4 <em>Groupes exclusifs</em>).
+                Créez <strong>4 Colonnes de scènes</strong> : <code className="text-purple-300">JOUEUR - N°1</code>, <code className="text-purple-300">JOUEUR - N°2</code>, <code className="text-purple-300">JOUEUR - N°3</code>, <code className="text-purple-300">JOUEUR - N°4</code>.
               </li>
               <li>
-                Dans chaque page de joueur, créez <strong>3 boutons (Switch / Scène)</strong> : <strong className="text-sky-300">Bleu</strong>, <strong className="text-emerald-300">Vert</strong>, <strong className="text-rose-300">Rouge</strong>.
+                Dans chaque colonne, créez <strong>4 scènes distinctes</strong> :
+                <ul className="list-disc list-inside pl-5 mt-1 space-y-1 text-slate-300">
+                  <li><strong className="text-emerald-300">N°X - JOUEUR</strong> : Projecteur allumé en <strong>VERT</strong> (état par défaut / en attente, 0 pt).</li>
+                  <li><strong className="text-sky-300">N°X - GAGNANT</strong> : Projecteur allumé en <strong>BLEU</strong> (le joueur a marqué au moins 1 point).</li>
+                  <li><strong className="text-amber-300">N°X - REPONSE</strong> : Projecteur allumé en <strong>JAUNE</strong> (le joueur a la main car il a buzzé en premier).</li>
+                  <li><strong className="text-rose-300">N°X - ELIMINE</strong> : Projecteur allumé en <strong>ROUGE</strong> (le candidat est éliminé).</li>
+                </ul>
               </li>
               <li>
-                <strong>Très important :</strong> Lors de la création des 3 boutons du Joueur 1, n'enregistrez <strong>QUE les canaux DMX du projecteur 1</strong> (laissez les autres projecteurs sur OFF / non affectés !). Faites de même pour J2, J3 et J4.
-              </li>
-              <li>
-                Réglez les 3 boutons d'un même joueur en mode <strong>Exclusif (ou « Libérer les autres boutons de la page »)</strong> : ainsi, quand le bouton <em>Vert</em> s'allume, il coupe automatiquement le bouton <em>Bleu</em> de ce joueur, sans toucher aux autres joueurs !
+                <strong>Important :</strong> Chaque colonne doit être en mode <strong>Exclusif</strong> pour que le déclenchement d'un état coupe automatiquement l'état précédent du même joueur sans affecter les autres projecteurs.
               </li>
             </ul>
           </div>
@@ -727,10 +753,10 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-3">
             <h4 className="font-bold text-sm text-white flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-purple-600 text-white text-xs flex items-center justify-center">2</span>
-              Mapper les Raccourcis Clavier sur chaque bouton Sunlite
+              Mapper les Raccourcis Clavier sur chaque bouton Daslight 3
             </h4>
             <p>
-              Dans Sunlite, faites un <strong>clic droit</strong> sur chaque bouton de couleur → <strong>Paramètres du bouton</strong> → champ <strong>Raccourci clavier</strong> (ou menu <em>Déclenchement clavier</em>), et associez les touches configurées dans l'onglet précédent :
+              Dans Daslight 3, faites un <strong>clic droit</strong> sur chaque bouton de scène → <strong>Propriétés du bouton</strong> (ou menu <em>Déclencheur clavier</em>), et associez les touches configurées dans l'onglet précédent :
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
               {state.players.slice(0, 4).map((p, i) => {
@@ -738,15 +764,16 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
                 return (
                   <div key={p.id} className="bg-slate-950 border border-slate-800 rounded-xl p-2.5 space-y-1">
                     <div className="font-bold text-white text-center border-b border-slate-800 pb-1">{p.name}</div>
-                    <div className="flex justify-between"><span className="text-sky-300">Bleu :</span> <kbd className="font-mono text-white">{m.blue}</kbd></div>
                     <div className="flex justify-between"><span className="text-emerald-300">Vert :</span> <kbd className="font-mono text-white">{m.green}</kbd></div>
+                    <div className="flex justify-between"><span className="text-sky-300">Bleu :</span> <kbd className="font-mono text-white">{m.blue}</kbd></div>
+                    <div className="flex justify-between"><span className="text-amber-300">Jaune :</span> <kbd className="font-mono text-white">{m.yellow}</kbd></div>
                     <div className="flex justify-between"><span className="text-rose-300">Rouge :</span> <kbd className="font-mono text-white">{m.red}</kbd></div>
                   </div>
                 );
               })}
             </div>
             <p className="text-amber-300/90 text-[11px]">
-              💡 Astuce : Sur le PC Windows, ouvrez cette page dans le navigateur à côté de Sunlite, cliquez dans la case raccourci de Sunlite, puis utilisez le bouton <strong>« 3s »</strong> dans l'onglet <em>Touches Clavier</em> pour que l'app tape la touche exacte toute seule !
+              💡 Astuce : Sur le PC Windows, ouvrez cette page à côté de Daslight 3, cliquez dans le champ raccourci de Daslight, puis utilisez le bouton <strong>« 3s »</strong> dans l'onglet <em>Touches Clavier</em> pour que l'app envoie la touche toute seule !
             </p>
           </div>
 
@@ -757,15 +784,15 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
             </h4>
             <ul className="list-disc list-inside space-y-1.5 text-slate-300 pl-2">
               <li>
-                <strong>PC 1 (Régie & Écran Public) :</strong> Ouvrez la Régie + l'Écran Public. Tout changement de score est envoyé vers Supabase en temps réel.
+                <strong>PC 1 (Régie & Écran Public) :</strong> Ouvrez la Régie + l'Écran Public. Tout changement de score ou de buzz est synchronisé vers Supabase en temps réel.
               </li>
               <li>
                 <strong>PC 2 (PC Lumières Windows dédié) :</strong>
                 <ol className="list-decimal list-inside pl-5 mt-1 space-y-1 text-slate-400">
-                  <li>Branchez l'interface DMX USB et lancez <strong>Sunlite Suite</strong>.</li>
+                  <li>Branchez l'interface DMX USB et lancez <strong>Daslight Virtual Controller 3</strong>.</li>
                   <li>Ouvrez cette page (<code>?view=dmx</code>) dans votre navigateur pour suivre le moniteur (facultatif mais pratique).</li>
                   <li>Lancez <strong>QuizMaster-DMX-Companion.exe</strong>.</li>
-                  <li><strong>Cliquez sur la fenêtre Sunlite</strong> pour qu'elle reste au premier plan (focus actif) pendant tout le quiz.</li>
+                  <li><strong>Cliquez sur la fenêtre Daslight Virtual Controller 3</strong> pour qu'elle reste active au premier plan.</li>
                 </ol>
               </li>
             </ul>

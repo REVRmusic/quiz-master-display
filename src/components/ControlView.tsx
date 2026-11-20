@@ -140,10 +140,19 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
         return;
       }
 
-      // B: Buzzer
+      // B: Buzzer / Donner la main
       if (e.key === 'b' || e.key === 'B') {
         e.preventDefault();
         playBuzzerSound();
+        return;
+      }
+
+      // Escape: Clear buzzer / release answering player
+      if (e.key === 'Escape') {
+        if (state.answeringPlayerId) {
+          e.preventDefault();
+          updateStateAndBroadcast({ answeringPlayerId: null }, { type: 'CLEAR_BUZZ' });
+        }
         return;
       }
 
@@ -212,9 +221,24 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
       {
         players: newPlayers,
         winnerPlayerId: triggeredWin ? playerId : state.winnerPlayerId,
+        answeringPlayerId: null, // Clear answering state when score is adjusted
       },
       actionToSend
     );
+  };
+
+  // BUZZER / GIVE FLOOR TO PLAYER
+  const handlePlayerBuzz = (playerId: string) => {
+    // If this player is already answering, clicking again clears the buzzer
+    if (state.answeringPlayerId === playerId) {
+      updateStateAndBroadcast({ answeringPlayerId: null }, { type: 'CLEAR_BUZZ' });
+      return;
+    }
+
+    soundEffects.playBuzz();
+    const action: SyncAction = { type: 'PLAYER_BUZZ', payload: { playerId } };
+    syncService.sendAction(action);
+    updateStateAndBroadcast({ answeringPlayerId: playerId }, action);
   };
 
   // INDIVIDUAL PLAYER RESET TO 0 (Requested by Organizer: replaces +2 button)
@@ -227,7 +251,10 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
         status: p.status === 'winner' ? ('active' as const) : p.status,
       };
     });
-    updateStateAndBroadcast({ players: newPlayers });
+    updateStateAndBroadcast({
+      players: newPlayers,
+      answeringPlayerId: state.answeringPlayerId === playerId ? null : state.answeringPlayerId,
+    });
   };
 
   // RESET ACTIVE PLAYERS ONLY (Keep existing winners in green and eliminated in red)
@@ -244,6 +271,7 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
       players: newPlayers,
       currentRound: state.currentRound + 1,
       winnerPlayerId: null,
+      answeringPlayerId: null,
     });
   };
 
@@ -258,7 +286,10 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
       }
       return { ...p, status: nextStatus };
     });
-    updateStateAndBroadcast({ players: newPlayers });
+    updateStateAndBroadcast({
+      players: newPlayers,
+      answeringPlayerId: state.answeringPlayerId === playerId ? null : state.answeringPlayerId,
+    });
   };
 
   // Declare winner manually
@@ -317,6 +348,7 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
       players: resetPlayers,
       currentRound: state.currentRound + 1,
       winnerPlayerId: null,
+      answeringPlayerId: null,
       timerRunning: false,
       timerRemaining: state.timerDuration,
       displayMode: 'scoreboard',
@@ -334,6 +366,7 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
       updateStateAndBroadcast({
         players: resetPlayers,
         winnerPlayerId: null,
+        answeringPlayerId: null,
       });
     }
   };
@@ -479,7 +512,7 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
               {state.soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
             </button>
 
-            {/* DMX / Sunlite Manager */}
+            {/* DMX / Daslight Manager */}
             <button
               type="button"
               onClick={() => setShowDmxModal(true)}
@@ -488,10 +521,10 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
                   ? 'bg-amber-950/40 hover:bg-amber-900/50 border-amber-700/60 text-amber-300'
                   : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-400'
               }`}
-              title="Pilotage DMX Sunlite & Téléchargement Companion Windows"
+              title="Pilotage DMX Daslight Virtual Controller 3 & Téléchargement Companion Windows"
             >
               <Lightbulb size={15} className={state.dmxConfig?.enabled !== false ? 'text-amber-400' : 'text-slate-500'} />
-              <span className="hidden md:inline">DMX Sunlite</span>
+              <span className="hidden md:inline">DMX Daslight 3</span>
             </button>
 
             {/* Sponsor Manager */}
@@ -627,13 +660,77 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
 
         {/* PLAYERS CONTROLLER GRID */}
         <div>
+          {/* ANSWERING PLAYER ACTIVE BANNER */}
+          {(() => {
+            const answeringPlayer = state.players.find((p) => p.id === state.answeringPlayerId);
+            if (!answeringPlayer) return null;
+            return (
+              <div className="mb-4 bg-gradient-to-r from-yellow-950/90 via-amber-950/70 to-slate-900 border-2 border-yellow-400 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4 animate-scale-up">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-yellow-400 text-slate-950 font-black text-xl flex items-center justify-center shadow-lg animate-bounce">
+                    ⚡
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-yellow-400 text-slate-950">
+                        A la main (Buzzé en premier)
+                      </span>
+                      <span className="text-xs text-yellow-300 font-semibold">
+                        Lumière DMX JAUNE active
+                      </span>
+                    </div>
+                    <h4 className="text-lg font-black text-white mt-0.5">
+                      {answeringPlayer.name} est en train de répondre
+                    </h4>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      adjustPlayerScore(answeringPlayer.id, 1);
+                      updateStateAndBroadcast({ answeringPlayerId: null }, { type: 'CLEAR_BUZZ' });
+                    }}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-lg flex items-center gap-1.5 transition-all active:scale-95"
+                    title="Valider la réponse et attribuer +1 point (Passe en BLEU)"
+                  >
+                    ✓ Bonne réponse (+1 pt)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundEffects.playWrong();
+                      syncService.sendAction({ type: 'PLAY_SOUND', payload: { sound: 'wrong' } });
+                      updateStateAndBroadcast({ answeringPlayerId: null }, { type: 'CLEAR_BUZZ' });
+                    }}
+                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow flex items-center gap-1.5 transition-all active:scale-95"
+                    title="Mauvaise réponse (Son buzzer et libération de la main)"
+                  >
+                    ✗ Mauvaise réponse
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => updateStateAndBroadcast({ answeringPlayerId: null }, { type: 'CLEAR_BUZZ' })}
+                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold text-xs border border-slate-700 transition-colors"
+                    title="Libérer la main sans modifier le score (Echap)"
+                  >
+                    Libérer (Echap)
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="flex items-center justify-between mb-3 px-1">
             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
               <Trophy size={16} className="text-purple-400" />
               Pupitres des Candidats (Touches Clavier 1 à {state.players.length})
             </h3>
             <span className="text-xs text-slate-500">
-              Tapez <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono">1</kbd>, <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono">2</kbd>... pour +1 pt
+              Tapez <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono">1</kbd>, <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono">2</kbd>... pour +1 pt • Bouton <strong className="text-yellow-300">⚡ Buzz</strong> pour donner la main
             </span>
           </div>
 
@@ -651,23 +748,39 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
             }`}
           >
             {state.players.map((player, index) => {
+              const isAnswering = state.answeringPlayerId === player.id;
               const isWinner =
                 player.status === 'winner' ||
                 (state.winScore > 0 && player.score >= state.winScore);
               const isEliminated = player.status === 'eliminated';
-              const dmxColor = getPlayerDmxColor(player, state.winScore);
+              const hasScore = player.score > 0;
+              const dmxColor = getPlayerDmxColor(player, state.winScore, state.answeringPlayerId);
               const dmxMeta = getDmxColorMeta(dmxColor);
+
+              const cardBorder = isAnswering && !isEliminated
+                ? 'bg-gradient-to-b from-yellow-950/60 to-slate-900 border-yellow-400 ring-2 ring-yellow-400/50 shadow-yellow-500/20'
+                : isWinner
+                ? 'bg-gradient-to-b from-amber-950/70 to-slate-900 border-amber-500 ring-2 ring-amber-400/40 shadow-amber-500/20'
+                : isEliminated
+                ? 'bg-rose-950/20 border-rose-900/60 opacity-60'
+                : hasScore
+                ? 'bg-slate-900/90 border-sky-500/50 hover:border-sky-400/60 shadow-sky-950/20'
+                : 'bg-slate-900/80 border-emerald-600/40 hover:border-emerald-500/50';
+
+              const scoreColor = isAnswering
+                ? 'text-yellow-300 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]'
+                : isWinner
+                ? 'text-amber-300 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]'
+                : isEliminated
+                ? 'text-rose-400 line-through'
+                : hasScore
+                ? 'text-sky-300 drop-shadow-[0_4px_16px_rgba(56,189,248,0.4)]'
+                : 'text-emerald-300 drop-shadow-[0_4px_16px_rgba(52,211,153,0.3)]';
 
               return (
                 <div
                   key={player.id}
-                  className={`rounded-2xl p-4 sm:p-5 border transition-all flex flex-col justify-between shadow-xl relative overflow-hidden ${
-                    isWinner
-                      ? 'bg-gradient-to-b from-amber-950/70 to-slate-900 border-amber-500 ring-2 ring-amber-400/40 shadow-amber-500/20'
-                      : isEliminated
-                      ? 'bg-rose-950/20 border-rose-900/60 opacity-60'
-                      : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'
-                  }`}
+                  className={`rounded-2xl p-4 sm:p-5 border transition-all flex flex-col justify-between shadow-xl relative overflow-hidden ${cardBorder}`}
                 >
                   {/* Top card bar: Player Index, DMX LED indicator & Status Badge */}
                   <div className="flex items-center justify-between mb-3 gap-1">
@@ -684,8 +797,12 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
                       </span>
                     </div>
 
-                    {/* Winner badge or eliminate badge */}
-                    {isWinner ? (
+                    {/* Status badge */}
+                    {isAnswering && !isEliminated ? (
+                      <span className="px-2 py-0.5 rounded-full bg-yellow-400 text-slate-950 font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
+                        ⚡ En réponse
+                      </span>
+                    ) : isWinner ? (
                       <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shadow">
                         <Trophy size={12} /> Gagnant
                       </span>
@@ -693,9 +810,13 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
                       <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white font-bold text-[10px] uppercase tracking-wider">
                         Éliminé
                       </span>
+                    ) : hasScore ? (
+                      <span className="px-2 py-0.5 rounded-full bg-sky-950/80 border border-sky-600/60 text-sky-300 font-bold text-[10px]">
+                        Point marqué
+                      </span>
                     ) : (
-                      <span className="text-[10px] text-slate-500 uppercase tracking-widest font-mono">
-                        Touche [{index + 1}]
+                      <span className="text-[10px] text-emerald-400/80 uppercase tracking-widest font-mono">
+                        Défaut
                       </span>
                     )}
                   </div>
@@ -714,20 +835,14 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
                   {/* Giant Score */}
                   <div className="text-center my-2">
                     <span
-                      className={`font-black text-6xl tracking-tight leading-none ${
-                        isWinner
-                          ? 'text-amber-300 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]'
-                          : isEliminated
-                          ? 'text-rose-400 line-through'
-                          : 'text-white'
-                      }`}
+                      className={`font-black text-6xl tracking-tight leading-none ${scoreColor}`}
                       style={{ fontFamily: 'Outfit, sans-serif' }}
                     >
                       {player.score}
                     </span>
                   </div>
 
-                  {/* SCORE ACTION BUTTONS: +1, -1, REMISE À 0 (Replaced +2 as requested by organizer!) */}
+                  {/* SCORE ACTION BUTTONS: +1, -1, REMISE À 0 */}
                   <div className="grid grid-cols-3 gap-1.5 mt-4">
                     <button
                       type="button"
@@ -748,24 +863,38 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
                       -1
                     </button>
 
-                    {/* NEW: Dedicated Remise à 0 button for this player */}
+                    {/* Dedicated Remise à 0 button for this player */}
                     <button
                       type="button"
                       onClick={() => resetPlayerScore(player.id)}
                       className="py-3 rounded-xl bg-purple-950/70 hover:bg-purple-800 border border-purple-700/60 text-purple-200 hover:text-white font-bold text-xs flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-all"
-                      title="Remettre le score de ce joueur à 0 (pour manche suivante)"
+                      title="Remettre le score de ce joueur à 0"
                     >
                       <RotateCcw size={14} className="text-purple-300" />
                       <span className="text-[10px] tracking-tight">À zéro</span>
                     </button>
                   </div>
 
-                  {/* BOTTOM SECONDARY ACTIONS: Winner / Eliminate */}
-                  <div className="flex items-center justify-between gap-1.5 mt-2.5 pt-2 border-t border-slate-800/80">
+                  {/* BOTTOM SECONDARY ACTIONS: Buzzer (Donner la main) / Winner / Eliminate */}
+                  <div className="grid grid-cols-3 gap-1 mt-2.5 pt-2 border-t border-slate-800/80">
+                    <button
+                      type="button"
+                      onClick={() => handlePlayerBuzz(player.id)}
+                      disabled={isEliminated}
+                      className={`py-1.5 px-1 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all disabled:opacity-30 ${
+                        isAnswering
+                          ? 'bg-yellow-400 text-slate-950 shadow-md font-black'
+                          : 'bg-slate-800 hover:bg-yellow-500/20 text-yellow-300 border border-yellow-700/40'
+                      }`}
+                      title={isAnswering ? 'Ce joueur a la main (cliquer pour libérer)' : 'Donner la main / Activer le buzzer (Passe en JAUNE)'}
+                    >
+                      <span>⚡ {isAnswering ? 'Répond' : 'Buzz'}</span>
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => declareWinnerManually(player.id)}
-                      className="flex-1 py-1 px-2 rounded-lg text-[11px] font-semibold text-amber-300 hover:bg-amber-950/40 border border-transparent hover:border-amber-800/50 flex items-center justify-center gap-1 transition-colors"
+                      className="py-1.5 px-1 rounded-lg text-[11px] font-semibold text-amber-300 hover:bg-amber-950/40 border border-transparent hover:border-amber-800/50 flex items-center justify-center gap-1 transition-colors"
                       title="Déclarer vainqueur de la manche"
                     >
                       <Trophy size={13} />
@@ -775,7 +904,7 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
                     <button
                       type="button"
                       onClick={() => togglePlayerElimination(player.id)}
-                      className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors ${
+                      className={`py-1.5 px-1 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors ${
                         isEliminated
                           ? 'bg-rose-900/60 text-white border border-rose-700'
                           : 'text-slate-400 hover:text-rose-400 hover:bg-rose-950/30'
@@ -783,7 +912,7 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
                       title="Éliminer / Rétablir ce joueur"
                     >
                       <UserX size={13} />
-                      <span>{isEliminated ? 'Rétablir' : 'Éliminer'}</span>
+                      <span className="truncate">{isEliminated ? 'Rétablir' : 'Éliminer'}</span>
                     </button>
                   </div>
                 </div>

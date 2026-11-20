@@ -45,7 +45,7 @@ export const DmxStandaloneView: React.FC = () => {
             </div>
             <div>
               <h1 className="font-extrabold text-base sm:text-lg text-white">
-                QuizMaster Pro — Moniteur Lumières DMX (Sunlite)
+                QuizMaster Pro — Moniteur Lumières DMX (Daslight 3)
               </h1>
               <p className="text-xs text-slate-400">
                 Vue dédiée au PC Lumières • {state.eventTitle}

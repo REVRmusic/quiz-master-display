@@ -32,9 +32,9 @@ export const DmxModal: React.FC<DmxModalProps> = ({
               <Lightbulb size={22} />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-white">Éclairages DMX & Pont Sunlite (Windows)</h3>
+              <h3 className="font-bold text-lg text-white">Éclairages DMX & Pont Daslight 3 (Windows)</h3>
               <p className="text-xs text-slate-400">
-                Pilotage automatique des PAR LEDs par touches clavier en temps réel
+                Pilotage automatique des PAR LEDs Daslight Virtual Controller 3 en temps réel
               </p>
             </div>
           </div>

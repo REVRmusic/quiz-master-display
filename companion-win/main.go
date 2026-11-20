@@ -16,12 +16,12 @@ func main() {
 	EnableAnsiConsole()
 
 	fmt.Println("\033[35m==============================================================\033[0m")
-	fmt.Println("\033[1;37m   QuizMaster Pro — Companion DMX Sunlite (Windows) v" + AppVersion + "\033[0m")
+	fmt.Println("\033[1;37m   QuizMaster Pro — Companion DMX Daslight 3 (Windows) v" + AppVersion + "\033[0m")
 	fmt.Println("\033[35m==============================================================\033[0m")
 	fmt.Println("  * Pont temps réel : Supabase Realtime + WebSocket local :8765")
-	fmt.Println("  * Règles PAR LED  : BLEU (0-2 pts) | VERT (3 pts) | ROUGE (Éliminé)")
+	fmt.Println("  * Règles PAR LED  : VERT (Défaut) | BLEU (Point) | JAUNE (Réponse) | ROUGE (Éliminé)")
 	fmt.Println("  * Conseil scène   : Laissez ce programme ouvert et cliquez sur")
-	fmt.Println("                      la fenêtre Sunlite pour lui donner le focus.")
+	fmt.Println("                      la fenêtre Daslight Virtual Controller 3 pour lui donner le focus.")
 	fmt.Println("--------------------------------------------------------------")
 	fmt.Println("  Commandes clavier ici : [R] Resynchroniser lumières  [Q] Quitter")
 	fmt.Println("==============================================================")
@@ -38,11 +38,11 @@ func main() {
 	hub.Start(LocalBridgePort)
 	engine.Log("info", fmt.Sprintf("Pont local démarré sur http://127.0.0.1:%d (WS /ws)", LocalBridgePort))
 
-	_, sunliteTitle := FindSunliteWindow()
-	if sunliteTitle != "" {
-		engine.Log("info", fmt.Sprintf("Fenêtre Sunlite détectée : %q", sunliteTitle))
+	_, daslightTitle := FindDaslightWindow()
+	if daslightTitle != "" {
+		engine.Log("info", fmt.Sprintf("Fenêtre Daslight détectée : %q", daslightTitle))
 	} else {
-		engine.Log("warn", "Sunlite non détecté pour l'instant (lancez Sunlite Suite).")
+		engine.Log("warn", "Daslight non détecté pour l'instant (lancez Daslight Virtual Controller 3).")
 	}
 
 	stopCh := make(chan struct{})

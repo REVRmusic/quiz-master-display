@@ -89,8 +89,16 @@ func GetActiveWindowTitle() string {
 	return getWindowTitle(hwnd)
 }
 
-// FindSunliteWindow locates any visible Sunlite Suite window
-func FindSunliteWindow() (uintptr, string) {
+func isDmxWindow(title string) bool {
+	lower := strings.ToLower(title)
+	return strings.Contains(lower, "daslight") ||
+		strings.Contains(lower, "virtual controller") ||
+		strings.Contains(lower, "dvc") ||
+		strings.Contains(lower, "sunlite")
+}
+
+// FindDaslightWindow locates any visible Daslight Virtual Controller (or Sunlite) window
+func FindDaslightWindow() (uintptr, string) {
 	var foundHwnd uintptr
 	var foundTitle string
 
@@ -100,8 +108,7 @@ func FindSunliteWindow() (uintptr, string) {
 			return 1
 		}
 		title := getWindowTitle(hwnd)
-		lower := strings.ToLower(title)
-		if strings.Contains(lower, "sunlite") {
+		if isDmxWindow(title) {
 			foundHwnd = hwnd
 			foundTitle = title
 			return 0 // stop enumeration
@@ -111,6 +118,11 @@ func FindSunliteWindow() (uintptr, string) {
 
 	procEnumWindows.Call(cb, 0)
 	return foundHwnd, foundTitle
+}
+
+// FindSunliteWindow is maintained as an alias for backward compatibility
+func FindSunliteWindow() (uintptr, string) {
+	return FindDaslightWindow()
 }
 
 func focusWindow(hwnd uintptr) {
@@ -258,26 +270,26 @@ func lookupVirtualKey(key string) (uint16, bool, error) {
 	return 0, false, fmt.Errorf("touche non reconnue: %s", key)
 }
 
-// SendShortcut sends a key combination to Windows (and optionally checks/focuses Sunlite)
-func SendShortcut(shortcut string, autoFocusSunlite bool, requireSunliteFocus bool) error {
+// SendShortcut sends a key combination to Windows (and optionally checks/focuses Daslight)
+func SendShortcut(shortcut string, autoFocusTarget bool, requireTargetFocus bool) error {
 	mods, vk, err := parseShortcut(shortcut)
 	if err != nil {
 		return err
 	}
 
 	activeTitle := GetActiveWindowTitle()
-	isSunliteActive := strings.Contains(strings.ToLower(activeTitle), "sunlite")
+	isTargetActive := isDmxWindow(activeTitle)
 
-	if !isSunliteActive && autoFocusSunlite {
-		if hwnd, _ := FindSunliteWindow(); hwnd != 0 {
+	if !isTargetActive && autoFocusTarget {
+		if hwnd, _ := FindDaslightWindow(); hwnd != 0 {
 			focusWindow(hwnd)
 			activeTitle = GetActiveWindowTitle()
-			isSunliteActive = strings.Contains(strings.ToLower(activeTitle), "sunlite")
+			isTargetActive = isDmxWindow(activeTitle)
 		}
 	}
 
-	if requireSunliteFocus && !isSunliteActive {
-		return fmt.Errorf("sécurité active : la fenêtre Sunlite n'a pas le focus (fenêtre actuelle : %q)", activeTitle)
+	if requireTargetFocus && !isTargetActive {
+		return fmt.Errorf("sécurité active : la fenêtre Daslight Virtual Controller 3 n'a pas le focus (fenêtre actuelle : %q)", activeTitle)
 	}
 
 	// Press modifiers
@@ -288,7 +300,7 @@ func SendShortcut(shortcut string, autoFocusSunlite bool, requireSunliteFocus bo
 		time.Sleep(15 * time.Millisecond)
 	}
 
-	// Hold main key for 45ms so Sunlite Suite detects it reliably
+	// Hold main key for 45ms so Daslight Virtual Controller 3 detects it reliably
 	sendKeyEvent(vk, false)
 	time.Sleep(45 * time.Millisecond)
 	sendKeyEvent(vk, true)

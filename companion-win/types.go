@@ -11,29 +11,33 @@ type Player struct {
 }
 
 type DmxPlayerMapping struct {
-	Blue  string `json:"blue"`
-	Green string `json:"green"`
-	Red   string `json:"red"`
+	Green  string `json:"green"`
+	Blue   string `json:"blue"`
+	Yellow string `json:"yellow"`
+	Red    string `json:"red"`
 }
 
 type DmxConfig struct {
-	Enabled             bool               `json:"enabled"`
-	RequireSunliteFocus bool               `json:"requireSunliteFocus"`
-	AutoFocusSunlite    bool               `json:"autoFocusSunlite"`
-	DelayMs             int                `json:"delayMs"`
-	PlayerMappings      []DmxPlayerMapping `json:"playerMappings"`
-	IntermissionKey     string             `json:"intermissionKey"`
-	VictoryFlashKey     string             `json:"victoryFlashKey"`
+	Enabled              bool               `json:"enabled"`
+	RequireSunliteFocus  bool               `json:"requireSunliteFocus"`
+	AutoFocusSunlite     bool               `json:"autoFocusSunlite"`
+	RequireDaslightFocus bool               `json:"requireDaslightFocus"`
+	AutoFocusDaslight    bool               `json:"autoFocusDaslight"`
+	DelayMs              int                `json:"delayMs"`
+	PlayerMappings       []DmxPlayerMapping `json:"playerMappings"`
+	IntermissionKey      string             `json:"intermissionKey"`
+	VictoryFlashKey      string             `json:"victoryFlashKey"`
 }
 
 type QuizState struct {
-	EventTitle      string     `json:"eventTitle"`
-	Players         []Player   `json:"players"`
-	WinScore        int        `json:"winScore"`
-	DisplayMode     string     `json:"displayMode"` // "scoreboard" | "intermission" | "winner"
-	CurrentRound    int        `json:"currentRound"`
-	LastUpdated     int64      `json:"lastUpdated"`
-	DmxConfig       *DmxConfig `json:"dmxConfig"`
+	EventTitle        string     `json:"eventTitle"`
+	Players           []Player   `json:"players"`
+	WinScore          int        `json:"winScore"`
+	DisplayMode       string     `json:"displayMode"` // "scoreboard" | "intermission" | "winner"
+	CurrentRound      int        `json:"currentRound"`
+	AnsweringPlayerId *string    `json:"answeringPlayerId"` // Player who buzzed first and has the floor
+	LastUpdated       int64      `json:"lastUpdated"`
+	DmxConfig         *DmxConfig `json:"dmxConfig"`
 }
 
 type SyncAction struct {
@@ -55,7 +59,8 @@ type LogEntry struct {
 
 type StatusSnapshot struct {
 	SupabaseConnected bool              `json:"supabaseConnected"`
-	SunliteWindow     string            `json:"sunliteWindow"`
+	DaslightWindow    string            `json:"daslightWindow"`
+	SunliteWindow     string            `json:"sunliteWindow"` // backward compat
 	ActiveWindow      string            `json:"activeWindow"`
 	PlayerColors      map[int]string    `json:"playerColors"`
 	PlayerNames       map[int]string    `json:"playerNames"`

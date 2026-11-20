@@ -20,18 +20,21 @@ export interface Sponsor {
   order: number;
 }
 
-export type DmxColor = 'blue' | 'green' | 'red';
+export type DmxColor = 'green' | 'blue' | 'yellow' | 'red';
 
 export interface DmxPlayerMapping {
-  blue: string;
-  green: string;
-  red: string;
+  green: string;  // Vert - Défaut (Joueur actif, 0 pt)
+  blue: string;   // Bleu - Point marqué / Gagnant
+  yellow: string; // Jaune - En réponse / Buzz
+  red: string;    // Rouge - Éliminé
 }
 
 export interface DmxConfig {
   enabled: boolean;
-  requireSunliteFocus: boolean;
-  autoFocusSunlite: boolean;
+  requireSunliteFocus: boolean; // Also applies to Daslight
+  autoFocusSunlite: boolean;    // Also applies to Daslight
+  requireDaslightFocus?: boolean;
+  autoFocusDaslight?: boolean;
   delayMs: number;
   playerMappings: DmxPlayerMapping[];
   intermissionKey: string;
@@ -63,9 +66,10 @@ export interface QuizState {
   // Round management
   currentRound: number;
   winnerPlayerId: string | null;
+  answeringPlayerId?: string | null; // Player who buzzed first and has the floor
   lastUpdated: number;
 
-  // DMX / Sunlite configuration
+  // DMX / Daslight configuration
   dmxConfig?: DmxConfig;
 }
 
@@ -84,7 +88,9 @@ export type SyncAction =
   | { type: 'STATE_UPDATE'; payload: QuizState }
   | { type: 'STATE_REQUEST' }
   | { type: 'TRIGGER_CONFETTI'; payload?: { intensity?: 'normal' | 'massive' } }
-  | { type: 'PLAY_SOUND'; payload: { sound: 'correct' | 'wrong' | 'win' | 'tick' | 'alarm' } }
+  | { type: 'PLAY_SOUND'; payload: { sound: 'correct' | 'wrong' | 'win' | 'tick' | 'alarm' | 'buzz' } }
+  | { type: 'PLAYER_BUZZ'; payload: { playerId: string } }
+  | { type: 'CLEAR_BUZZ' }
   | { type: 'DMX_TEST'; payload: { key: string; label?: string } }
   | { type: 'DMX_RESYNC' }
   | { type: 'PING' }

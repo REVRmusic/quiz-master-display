@@ -6,12 +6,12 @@ export const DEFAULT_DMX_CONFIG: DmxConfig = {
   autoFocusSunlite: true,
   delayMs: 80,
   playerMappings: [
-    { blue: 'A', green: 'Z', red: 'E' }, // Joueur 1
-    { blue: 'R', green: 'T', red: 'Y' }, // Joueur 2
-    { blue: 'Q', green: 'S', red: 'D' }, // Joueur 3
-    { blue: 'F', green: 'G', red: 'H' }, // Joueur 4
-    { blue: 'W', green: 'X', red: 'C' }, // Joueur 5
-    { blue: 'V', green: 'B', red: 'N' }, // Joueur 6
+    { green: 'A', blue: 'Z', yellow: 'W', red: 'E' }, // Joueur 1 (A: Joueur, Z: Gagnant, W: Réponse, E: Éliminé)
+    { green: 'R', blue: 'T', yellow: 'U', red: 'Y' }, // Joueur 2 (R: Joueur, T: Gagnant, U: Réponse, Y: Éliminé)
+    { green: 'Q', blue: 'S', yellow: 'X', red: 'D' }, // Joueur 3 (Q: Joueur, S: Gagnant, X: Réponse, D: Éliminé)
+    { green: 'F', blue: 'G', yellow: 'V', red: 'H' }, // Joueur 4 (F: Joueur, G: Gagnant, V: Réponse, H: Éliminé)
+    { green: 'J', blue: 'K', yellow: 'B', red: 'L' }, // Joueur 5
+    { green: 'M', blue: 'O', yellow: 'P', red: 'N' }, // Joueur 6
   ],
   intermissionKey: '',
   victoryFlashKey: '',
@@ -68,6 +68,7 @@ export const INITIAL_QUIZ_STATE: QuizState = {
   
   currentRound: 1,
   winnerPlayerId: null,
+  answeringPlayerId: null,
   lastUpdated: 0,
   dmxConfig: DEFAULT_DMX_CONFIG,
 };

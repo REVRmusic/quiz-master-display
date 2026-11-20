@@ -88,6 +88,43 @@ class SoundEffects {
     }
   }
 
+  // Player buzzer lockout: sharp, punchy TV gameshow buzzer chime
+  public playBuzz() {
+    if (!this.enabled) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+
+      // Punchy dual tone (high presence)
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(880, now); // A5
+      osc1.frequency.exponentialRampToValueAtTime(1174.66, now + 0.12); // D6
+
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(440, now); // A4
+      osc2.frequency.exponentialRampToValueAtTime(587.33, now + 0.12);
+
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.38);
+      osc2.stop(now + 0.38);
+    } catch (err) {
+      console.warn('Audio play error', err);
+    }
+  }
+
   // Victory Fanfare: Exciting multi-note fanfare
   public playWin() {
     if (!this.enabled) return;

@@ -36,17 +36,19 @@ func NewDmxEngine(onStatusChange func(StatusSnapshot)) *DmxEngine {
 
 func DefaultDmxConfig() DmxConfig {
 	return DmxConfig{
-		Enabled:             true,
-		RequireSunliteFocus: false,
-		AutoFocusSunlite:    true,
-		DelayMs:             80,
+		Enabled:              true,
+		RequireSunliteFocus:  false,
+		AutoFocusSunlite:     true,
+		RequireDaslightFocus: false,
+		AutoFocusDaslight:    true,
+		DelayMs:              80,
 		PlayerMappings: []DmxPlayerMapping{
-			{Blue: "A", Green: "Z", Red: "E"},
-			{Blue: "R", Green: "T", Red: "Y"},
-			{Blue: "Q", Green: "S", Red: "D"},
-			{Blue: "F", Green: "G", Red: "H"},
-			{Blue: "W", Green: "X", Red: "C"},
-			{Blue: "V", Green: "B", Red: "N"},
+			{Green: "A", Blue: "Z", Yellow: "W", Red: "E"},
+			{Green: "R", Blue: "T", Yellow: "U", Red: "Y"},
+			{Green: "Q", Blue: "S", Yellow: "X", Red: "D"},
+			{Green: "F", Blue: "G", Yellow: "V", Red: "H"},
+			{Green: "J", Blue: "K", Yellow: "B", Red: "L"},
+			{Green: "M", Blue: "O", Yellow: "P", Red: "N"},
 		},
 	}
 }
@@ -74,24 +76,29 @@ func (e *DmxEngine) resolveConfig(state *QuizState) DmxConfig {
 	return cfg
 }
 
-func computePlayerColor(p Player, winScore int) string {
+func computePlayerColor(p Player, winScore int, answeringPlayerId string) string {
 	if p.Status == "eliminated" {
 		return "red"
 	}
-	if p.Status == "winner" || (winScore > 0 && p.Score >= winScore) {
-		return "green"
+	if answeringPlayerId != "" && p.ID == answeringPlayerId {
+		return "yellow"
 	}
-	return "blue"
+	if p.Score > 0 || p.Status == "winner" || (winScore > 0 && p.Score >= winScore) {
+		return "blue"
+	}
+	return "green"
 }
 
 func colorLabelFr(c string) string {
 	switch c {
-	case "green":
-		return "VERT"
+	case "yellow":
+		return "JAUNE (Réponse)"
+	case "blue":
+		return "BLEU (Point)"
 	case "red":
-		return "ROUGE"
+		return "ROUGE (Éliminé)"
 	default:
-		return "BLEU"
+		return "VERT (Défaut)"
 	}
 }
 
@@ -152,7 +159,7 @@ func (e *DmxEngine) SetSupabaseConnected(connected bool) {
 }
 
 func (e *DmxEngine) snapshotLocked() StatusSnapshot {
-	_, sunliteTitle := FindSunliteWindow()
+	_, daslightTitle := FindDaslightWindow()
 	activeTitle := GetActiveWindowTitle()
 
 	colorsCopy := make(map[int]string, len(e.lastPlayerColors))
@@ -173,7 +180,8 @@ func (e *DmxEngine) snapshotLocked() StatusSnapshot {
 
 	return StatusSnapshot{
 		SupabaseConnected: e.supabaseConnected,
-		SunliteWindow:     sunliteTitle,
+		DaslightWindow:    daslightTitle,
+		SunliteWindow:     daslightTitle,
 		ActiveWindow:      activeTitle,
 		PlayerColors:      colorsCopy,
 		PlayerNames:       namesCopy,
@@ -210,12 +218,17 @@ func (e *DmxEngine) ProcessRemoteUpdate(state *QuizState, action *SyncAction) {
 	isFirstInit := !e.hasInitialized
 	e.hasInitialized = true
 
+	answeringId := ""
+	if state.AnsweringPlayerId != nil {
+		answeringId = *state.AnsweringPlayerId
+	}
+
 	// Check player color transitions
 	for i, p := range state.Players {
 		if i >= len(cfg.PlayerMappings) {
 			break
 		}
-		color := computePlayerColor(p, state.WinScore)
+		color := computePlayerColor(p, state.WinScore, answeringId)
 		prevColor, existed := e.lastPlayerColors[i]
 		e.lastPlayerNames[i] = p.Name
 
@@ -305,11 +318,15 @@ func (e *DmxEngine) ProcessRemoteUpdate(state *QuizState, action *SyncAction) {
 
 func (e *DmxEngine) buildFullResyncLocked(state *QuizState, cfg DmxConfig) []queuedKey {
 	var keys []queuedKey
+	answeringId := ""
+	if state.AnsweringPlayerId != nil {
+		answeringId = *state.AnsweringPlayerId
+	}
 	for i, p := range state.Players {
 		if i >= len(cfg.PlayerMappings) {
 			break
 		}
-		color := computePlayerColor(p, state.WinScore)
+		color := computePlayerColor(p, state.WinScore, answeringId)
 		e.lastPlayerColors[i] = color
 		shortcut := shortcutForColor(cfg.PlayerMappings[i], color)
 		if shortcut != "" {
@@ -378,11 +395,13 @@ func (e *DmxEngine) dispatchKeys(keys []queuedKey, cfg DmxConfig) {
 
 func shortcutForColor(m DmxPlayerMapping, color string) string {
 	switch color {
-	case "green":
-		return strings.TrimSpace(m.Green)
+	case "yellow":
+		return strings.TrimSpace(m.Yellow)
+	case "blue":
+		return strings.TrimSpace(m.Blue)
 	case "red":
 		return strings.TrimSpace(m.Red)
 	default:
-		return strings.TrimSpace(m.Blue)
+		return strings.TrimSpace(m.Green)
 	}
 }
