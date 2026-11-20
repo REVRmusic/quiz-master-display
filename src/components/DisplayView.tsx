@@ -260,36 +260,31 @@ export const DisplayView: React.FC<DisplayViewProps> = ({ initialState }) => {
                 player.status === 'winner' ||
                 (state.winScore > 0 && player.score >= state.winScore);
               const isEliminated = player.status === 'eliminated';
-              const hasScore = player.score > 0;
               const isAnimated = animatedPlayerId === player.id;
 
-              // Color resolution: Answering (Yellow) > Winner (Gold) > Eliminated (Red) > Score > 0 (Blue) > Default (Green)
+              // Color resolution: Answering (Blue) > Winner (Yellow/Gold) > Eliminated (Red) > Default (Green)
               const cardClasses = isAnswering && !isEliminated
-                ? 'bg-gradient-to-b from-yellow-950/80 via-amber-950/60 to-slate-900 border-yellow-400 ring-4 ring-yellow-400/70 shadow-[0_0_40px_rgba(250,204,21,0.65)] scale-105 z-30 animate-pulse'
+                ? 'bg-gradient-to-b from-sky-950/90 via-blue-950/70 to-slate-900 border-sky-400 ring-4 ring-sky-400/70 shadow-[0_0_40px_rgba(56,189,248,0.7)] scale-105 z-30 animate-pulse'
                 : isWinner
                 ? 'bg-gradient-to-b from-amber-500/30 to-amber-900/40 border-amber-400 ring-4 ring-amber-400/50 shadow-amber-500/40 scale-105 z-20 animate-pulse-fast'
                 : isEliminated
                 ? 'bg-black/60 border-rose-900/60 opacity-55 grayscale'
-                : hasScore
-                ? 'bg-gradient-to-b from-sky-950/80 via-blue-950/50 to-slate-900 border-sky-400/70 ring-2 ring-sky-400/30 shadow-[0_0_28px_rgba(56,189,248,0.35)]'
                 : 'bg-gradient-to-b from-emerald-950/70 via-teal-950/40 to-slate-900 border-emerald-500/50 shadow-[0_0_25px_rgba(52,211,153,0.25)]';
 
               const nameColor = isAnswering
-                ? 'text-yellow-100'
+                ? 'text-sky-100'
                 : isWinner
                 ? 'text-amber-200'
-                : hasScore
-                ? 'text-sky-100'
+                : isEliminated
+                ? 'text-slate-400'
                 : 'text-emerald-100';
 
               const scoreColor = isAnswering
-                ? 'text-yellow-300 drop-shadow-[0_0_25px_rgba(250,204,21,0.85)]'
+                ? 'text-sky-300 drop-shadow-[0_0_25px_rgba(56,189,248,0.85)]'
                 : isWinner
                 ? 'text-amber-300 drop-shadow-[0_0_25px_rgba(251,191,36,0.6)]'
                 : isEliminated
                 ? 'text-rose-400 line-through'
-                : hasScore
-                ? 'text-sky-300 drop-shadow-[0_4px_20px_rgba(56,189,248,0.7)]'
                 : 'text-emerald-300 drop-shadow-[0_4px_16px_rgba(52,211,153,0.5)]';
 
               return (
@@ -301,9 +296,9 @@ export const DisplayView: React.FC<DisplayViewProps> = ({ initialState }) => {
                   {/* BUZZER / ANSWERING BADGE OVERLAY */}
                   {isAnswering && !isEliminated && (
                     <div className="absolute -top-5 inset-x-0 flex justify-center z-30">
-                      <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-400 text-slate-950 font-black text-sm md:text-base tracking-wider shadow-2xl animate-bounce">
-                        <Sparkles size={18} className="text-amber-950" />
-                        ⚡ EN RÉPONSE !
+                      <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-sky-400 via-cyan-300 to-sky-400 text-slate-950 font-black text-sm md:text-base tracking-wider shadow-2xl animate-bounce">
+                        <Sparkles size={18} className="text-sky-950" />
+                        ⚡ A LA MAIN (BUZZ) !
                       </span>
                     </div>
                   )}
@@ -313,7 +308,7 @@ export const DisplayView: React.FC<DisplayViewProps> = ({ initialState }) => {
                     <div className="absolute -top-5 inset-x-0 flex justify-center z-30">
                       <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black text-sm md:text-base tracking-wider shadow-xl animate-bounce">
                         <Trophy size={18} className="text-amber-900" />
-                        GAGNÉ !
+                        QUALIFIÉ (3 POINTS) !
                       </span>
                     </div>
                   )}
@@ -356,20 +351,20 @@ export const DisplayView: React.FC<DisplayViewProps> = ({ initialState }) => {
                   {/* BOTTOM STATUS FOOTER OF CARD */}
                   <div className="w-full text-center pt-2 min-h-[32px] flex items-center justify-center">
                     {isAnswering ? (
-                      <span className="text-xs font-black uppercase tracking-widest text-yellow-300 flex items-center gap-1 animate-pulse">
+                      <span className="text-xs font-black uppercase tracking-widest text-sky-300 flex items-center gap-1 animate-pulse">
                         ⚡ A la main (Buzzé en premier)
                       </span>
                     ) : isWinner ? (
                       <span className="text-sm font-bold text-amber-300 flex items-center gap-1">
-                        🏆 Vainqueur de la manche
+                        🏆 Vainqueur de la manche (3 points)
                       </span>
-                    ) : hasScore ? (
-                      <span className="text-xs uppercase tracking-widest text-sky-300 font-bold">
-                        {player.score} point{player.score > 1 ? 's' : ''} marqué{player.score > 1 ? 's' : ''}
+                    ) : isEliminated ? (
+                      <span className="text-xs uppercase tracking-widest text-rose-400 font-bold">
+                        Éliminé de la manche
                       </span>
                     ) : (
                       <span className="text-xs uppercase tracking-widest text-emerald-400/80 font-medium">
-                        Par défaut (0 pt)
+                        En attente
                       </span>
                     )}
                   </div>

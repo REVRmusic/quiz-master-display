@@ -23,9 +23,9 @@ export interface Sponsor {
 export type DmxColor = 'green' | 'blue' | 'yellow' | 'red';
 
 export interface DmxPlayerMapping {
-  green: string;  // Vert - Défaut (Joueur actif, 0 pt)
-  blue: string;   // Bleu - Point marqué / Gagnant
-  yellow: string; // Jaune - En réponse / Buzz
+  green: string;  // Vert - Position d'attente (initialisation, 0-2 pts)
+  blue: string;   // Bleu - A la main / Buzz
+  yellow: string; // Jaune - Arrivé à 3 points (gagné manche / qualifié)
   red: string;    // Rouge - Éliminé
 }
 

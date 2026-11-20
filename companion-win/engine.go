@@ -43,12 +43,12 @@ func DefaultDmxConfig() DmxConfig {
 		AutoFocusDaslight:    true,
 		DelayMs:              80,
 		PlayerMappings: []DmxPlayerMapping{
-			{Green: "A", Blue: "Z", Yellow: "W", Red: "E"},
-			{Green: "R", Blue: "T", Yellow: "U", Red: "Y"},
-			{Green: "Q", Blue: "S", Yellow: "X", Red: "D"},
-			{Green: "F", Blue: "G", Yellow: "V", Red: "H"},
-			{Green: "J", Blue: "K", Yellow: "B", Red: "L"},
-			{Green: "M", Blue: "O", Yellow: "P", Red: "N"},
+			{Green: "Z", Blue: "W", Yellow: "A", Red: "E"},
+			{Green: "T", Blue: "U", Yellow: "R", Red: "Y"},
+			{Green: "S", Blue: "X", Yellow: "Q", Red: "D"},
+			{Green: "G", Blue: "V", Yellow: "F", Red: "H"},
+			{Green: "J", Blue: "B", Yellow: "K", Red: "L"},
+			{Green: "M", Blue: "P", Yellow: "O", Red: "N"},
 		},
 	}
 }
@@ -64,11 +64,11 @@ func (e *DmxEngine) resolveConfig(state *QuizState) DmxConfig {
 		defMap := def.PlayerMappings[i]
 		if i < len(cfg.PlayerMappings) {
 			cur := cfg.PlayerMappings[i]
-			// Auto-migrate legacy mapping from previous version (where green and blue were inverted or yellow was empty)
-			if (i == 0 && cur.Green == "Z" && cur.Blue == "A") ||
-				(i == 1 && cur.Green == "T" && cur.Blue == "R") ||
-				(i == 2 && cur.Green == "S" && cur.Blue == "Q") ||
-				(i == 3 && cur.Green == "G" && cur.Blue == "F") {
+			// Auto-migrate legacy mapping from previous version (e.g. green=A, blue=Z)
+			if (i == 0 && (cur.Green == "A" || cur.Blue == "Z")) ||
+				(i == 1 && (cur.Green == "R" || cur.Blue == "T")) ||
+				(i == 2 && (cur.Green == "Q" || cur.Blue == "S")) ||
+				(i == 3 && (cur.Green == "F" || cur.Blue == "G")) {
 				cur.Green = defMap.Green
 				cur.Blue = defMap.Blue
 				cur.Yellow = defMap.Yellow
@@ -103,10 +103,14 @@ func computePlayerColor(p Player, winScore int, answeringPlayerId string) string
 	if p.Status == "eliminated" {
 		return "red"
 	}
-	if answeringPlayerId != "" && p.ID == answeringPlayerId {
+	targetScore := winScore
+	if targetScore <= 0 {
+		targetScore = 3
+	}
+	if p.Score >= targetScore || p.Status == "winner" {
 		return "yellow"
 	}
-	if p.Score > 0 || p.Status == "winner" || (winScore > 0 && p.Score >= winScore) {
+	if answeringPlayerId != "" && p.ID == answeringPlayerId {
 		return "blue"
 	}
 	return "green"
@@ -115,13 +119,13 @@ func computePlayerColor(p Player, winScore int, answeringPlayerId string) string
 func colorLabelFr(c string) string {
 	switch c {
 	case "yellow":
-		return "JAUNE (Réponse)"
+		return "JAUNE (3 points / Qualifié)"
 	case "blue":
-		return "BLEU (Point)"
+		return "BLEU (Buzz / En réponse)"
 	case "red":
 		return "ROUGE (Éliminé)"
 	default:
-		return "VERT (Défaut)"
+		return "VERT (Attente)"
 	}
 }
 

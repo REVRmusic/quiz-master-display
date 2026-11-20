@@ -756,28 +756,23 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
                 player.status === 'winner' ||
                 (state.winScore > 0 && player.score >= state.winScore);
               const isEliminated = player.status === 'eliminated';
-              const hasScore = player.score > 0;
               const dmxColor = getPlayerDmxColor(player, state.winScore, state.answeringPlayerId);
               const dmxMeta = getDmxColorMeta(dmxColor);
 
               const cardBorder = isAnswering && !isEliminated
-                ? 'bg-gradient-to-b from-yellow-950/60 to-slate-900 border-yellow-400 ring-2 ring-yellow-400/50 shadow-yellow-500/20'
+                ? 'bg-gradient-to-b from-sky-950/70 to-slate-900 border-sky-400 ring-2 ring-sky-400/50 shadow-sky-500/20'
                 : isWinner
                 ? 'bg-gradient-to-b from-amber-950/70 to-slate-900 border-amber-500 ring-2 ring-amber-400/40 shadow-amber-500/20'
                 : isEliminated
                 ? 'bg-rose-950/20 border-rose-900/60 opacity-60'
-                : hasScore
-                ? 'bg-slate-900/90 border-sky-500/50 hover:border-sky-400/60 shadow-sky-950/20'
                 : 'bg-slate-900/80 border-emerald-600/40 hover:border-emerald-500/50';
 
               const scoreColor = isAnswering
-                ? 'text-yellow-300 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]'
+                ? 'text-sky-300 drop-shadow-[0_0_15px_rgba(56,189,248,0.6)]'
                 : isWinner
                 ? 'text-amber-300 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]'
                 : isEliminated
                 ? 'text-rose-400 line-through'
-                : hasScore
-                ? 'text-sky-300 drop-shadow-[0_4px_16px_rgba(56,189,248,0.4)]'
                 : 'text-emerald-300 drop-shadow-[0_4px_16px_rgba(52,211,153,0.3)]';
 
               return (
@@ -802,24 +797,20 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
 
                     {/* Status badge */}
                     {isAnswering && !isEliminated ? (
-                      <span className="px-2 py-0.5 rounded-full bg-yellow-400 text-slate-950 font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
-                        ⚡ En réponse
+                      <span className="px-2 py-0.5 rounded-full bg-sky-400 text-slate-950 font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
+                        ⚡ A la main
                       </span>
                     ) : isWinner ? (
                       <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shadow">
-                        <Trophy size={12} /> Gagnant
+                        <Trophy size={12} /> Qualifié (3 pts)
                       </span>
                     ) : isEliminated ? (
                       <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white font-bold text-[10px] uppercase tracking-wider">
                         Éliminé
                       </span>
-                    ) : hasScore ? (
-                      <span className="px-2 py-0.5 rounded-full bg-sky-950/80 border border-sky-600/60 text-sky-300 font-bold text-[10px]">
-                        Point marqué
-                      </span>
                     ) : (
                       <span className="text-[10px] text-emerald-400/80 uppercase tracking-widest font-mono">
-                        Défaut
+                        En attente
                       </span>
                     )}
                   </div>

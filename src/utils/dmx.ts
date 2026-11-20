@@ -2,11 +2,11 @@ import { DmxColor, DmxConfig, DmxPlayerMapping, Player } from '../types';
 import { DEFAULT_DMX_CONFIG } from '../constants/defaultData';
 
 /**
- * Determine the PAR LED color for a player based on the organizer's lighting rules:
- * - Eliminated -> Red ('red')
- * - Answering / Buzzed in first -> Yellow ('yellow')
- * - Has scored / Winner -> Blue ('blue')
- * - Default (active, 0 pts) -> Green ('green')
+ * Determine the PAR LED color for a player based on the companion app rules:
+ * - Eliminated -> Red ('red') (until new round)
+ * - Reached 3 points (or winScore) / Winner -> Yellow ('yellow') (until new round)
+ * - Answering / Buzzed in first (has the floor) -> Blue ('blue')
+ * - Default / Waiting position (0, 1, 2 pts, active) -> Green ('green')
  */
 export function getPlayerDmxColor(
   player: Player,
@@ -16,10 +16,11 @@ export function getPlayerDmxColor(
   if (player.status === 'eliminated') {
     return 'red';
   }
-  if (answeringPlayerId && player.id === answeringPlayerId) {
+  const targetScore = winScore > 0 ? winScore : 3;
+  if (player.score >= targetScore || player.status === 'winner') {
     return 'yellow';
   }
-  if (player.score > 0 || player.status === 'winner' || (winScore > 0 && player.score >= winScore)) {
+  if (answeringPlayerId && player.id === answeringPlayerId) {
     return 'blue';
   }
   return 'green';
@@ -36,18 +37,18 @@ export function getDmxColorMeta(color: DmxColor): {
     case 'yellow':
       return {
         label: 'JAUNE',
-        description: 'En réponse (Buzz)',
-        dotClass: 'bg-amber-300 shadow-[0_0_12px_#fde047] animate-pulse',
-        pillClass: 'bg-amber-950/80 text-amber-300 border-amber-500 shadow-[0_0_14px_rgba(251,191,36,0.6)] animate-pulse',
+        description: '3 points (Qualifié)',
+        dotClass: 'bg-amber-300 shadow-[0_0_12px_#fde047]',
+        pillClass: 'bg-amber-950/80 text-amber-300 border-amber-500 shadow-[0_0_14px_rgba(251,191,36,0.6)]',
         glowStyle: '0 0 35px rgba(250, 204, 21, 0.9)',
       };
     case 'blue':
       return {
         label: 'BLEU',
-        description: 'Point marqué',
-        dotClass: 'bg-sky-400 shadow-[0_0_10px_#38bdf8]',
-        pillClass: 'bg-sky-950/70 text-sky-300 border-sky-600/60',
-        glowStyle: '0 0 28px rgba(56, 189, 248, 0.75)',
+        description: 'A la main (Buzz)',
+        dotClass: 'bg-sky-400 shadow-[0_0_12px_#38bdf8] animate-pulse',
+        pillClass: 'bg-sky-950/80 text-sky-300 border-sky-500 shadow-[0_0_14px_rgba(56,189,248,0.6)] animate-pulse',
+        glowStyle: '0 0 35px rgba(56, 189, 248, 0.9)',
       };
     case 'red':
       return {
@@ -61,7 +62,7 @@ export function getDmxColorMeta(color: DmxColor): {
     default:
       return {
         label: 'VERT',
-        description: 'Par défaut (0 pt)',
+        description: 'Position d\'attente',
         dotClass: 'bg-emerald-400 shadow-[0_0_10px_#34d399]',
         pillClass: 'bg-emerald-950/70 text-emerald-300 border-emerald-600/60',
         glowStyle: '0 0 28px rgba(52, 211, 153, 0.75)',
@@ -73,22 +74,22 @@ export function resolveDmxConfig(dmxConfig?: DmxConfig): DmxConfig {
   if (!dmxConfig) return DEFAULT_DMX_CONFIG;
 
   const sanitizeMapping = (m: Partial<DmxPlayerMapping> | undefined, def: DmxPlayerMapping, idx: number): DmxPlayerMapping => {
-    // Detect legacy mapping from previous version where green and blue were inverted or yellow missing
-    const isLegacyInverted =
-      (idx === 0 && m?.green === 'Z' && m?.blue === 'A') ||
-      (idx === 1 && m?.green === 'T' && m?.blue === 'R') ||
-      (idx === 2 && m?.green === 'S' && m?.blue === 'Q') ||
-      (idx === 3 && m?.green === 'G' && m?.blue === 'F');
+    // Auto-migrate legacy mappings from previous versions where green was A or blue was Z
+    const isLegacyOld =
+      (idx === 0 && (m?.green === 'A' || m?.blue === 'Z')) ||
+      (idx === 1 && (m?.green === 'R' || m?.blue === 'T')) ||
+      (idx === 2 && (m?.green === 'Q' || m?.blue === 'S')) ||
+      (idx === 3 && (m?.green === 'F' || m?.blue === 'G'));
 
-    if (isLegacyInverted) {
+    if (isLegacyOld) {
       return { ...def };
     }
 
     return {
-      green: (m?.green && m.green.trim()) || def.green,
-      blue: (m?.blue && m.blue.trim()) || def.blue,
-      yellow: (m?.yellow && m.yellow.trim()) || def.yellow,
-      red: (m?.red && m.red.trim()) || def.red,
+      green: (m?.green && m.green.trim().toUpperCase()) || def.green,
+      blue: (m?.blue && m.blue.trim().toUpperCase()) || def.blue,
+      yellow: (m?.yellow && m.yellow.trim().toUpperCase()) || def.yellow,
+      red: (m?.red && m.red.trim().toUpperCase()) || def.red,
     };
   };
 

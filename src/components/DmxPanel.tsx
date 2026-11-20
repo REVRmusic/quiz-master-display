@@ -420,10 +420,10 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
                   {/* Glowing PAR LED Circle */}
                   <div
                     className={`w-20 h-20 rounded-full border-4 border-slate-800 flex flex-col items-center justify-center transition-all duration-300 ${
-                      color === 'yellow'
-                        ? 'bg-amber-400 text-slate-950 font-black animate-pulse'
-                        : color === 'blue'
-                        ? 'bg-sky-500 text-slate-950 font-bold'
+                      color === 'blue'
+                        ? 'bg-sky-500 text-slate-950 font-black animate-pulse'
+                        : color === 'yellow'
+                        ? 'bg-amber-400 text-slate-950 font-bold'
                         : color === 'red'
                         ? 'bg-rose-600 text-white font-bold'
                         : 'bg-emerald-500 text-slate-950 font-bold'
@@ -442,28 +442,28 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
                   <div className="w-full grid grid-cols-2 gap-1.5 pt-2 border-t border-slate-800/80">
                     <button
                       type="button"
-                      onClick={() => triggerTestKey(mapping.green, `Test ${player.name} VERT (Défaut)`)}
+                      onClick={() => triggerTestKey(mapping.green, `Test ${player.name} VERT (Attente)`)}
                       disabled={!mapping.green}
                       className="py-1.5 px-1 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-700/50 text-emerald-300 text-[10px] font-bold disabled:opacity-30 transition-colors"
-                      title={`Envoyer touche [${mapping.green}] (Par défaut / 0 pt)`}
+                      title={`Envoyer touche [${mapping.green}] (Position d'attente)`}
                     >
                       Vert [{mapping.green || '-'}]
                     </button>
                     <button
                       type="button"
-                      onClick={() => triggerTestKey(mapping.blue, `Test ${player.name} BLEU (Point)`)}
+                      onClick={() => triggerTestKey(mapping.blue, `Test ${player.name} BLEU (Buzz / Main)`)}
                       disabled={!mapping.blue}
                       className="py-1.5 px-1 rounded-lg bg-sky-950/60 hover:bg-sky-900 border border-sky-700/50 text-sky-300 text-[10px] font-bold disabled:opacity-30 transition-colors"
-                      title={`Envoyer touche [${mapping.blue}] (Point marqué)`}
+                      title={`Envoyer touche [${mapping.blue}] (A la main / Buzz)`}
                     >
                       Bleu [{mapping.blue || '-'}]
                     </button>
                     <button
                       type="button"
-                      onClick={() => triggerTestKey(mapping.yellow, `Test ${player.name} JAUNE (Réponse)`)}
+                      onClick={() => triggerTestKey(mapping.yellow, `Test ${player.name} JAUNE (3 points / Qualifié)`)}
                       disabled={!mapping.yellow}
                       className="py-1.5 px-1 rounded-lg bg-amber-950/60 hover:bg-amber-900 border border-amber-600/50 text-amber-300 text-[10px] font-bold disabled:opacity-30 transition-colors"
-                      title={`Envoyer touche [${mapping.yellow}] (En réponse / Buzz)`}
+                      title={`Envoyer touche [${mapping.yellow}] (3 points / Qualifié)`}
                     >
                       Jaune [{mapping.yellow || '-'}]
                     </button>
@@ -562,11 +562,11 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
                   {(['green', 'blue', 'yellow', 'red'] as const).map((col) => {
                     const colorTitle =
                       col === 'green'
-                        ? 'Vert (Défaut / Joueur)'
+                        ? 'Vert (Attente)'
                         : col === 'blue'
-                        ? 'Bleu (Point / Gagnant)'
+                        ? 'Bleu (Buzz / Main)'
                         : col === 'yellow'
-                        ? 'Jaune (Réponse / Buzz)'
+                        ? 'Jaune (3 pts / Qualifié)'
                         : 'Rouge (Éliminé)';
                     const borderColor =
                       col === 'green'
@@ -738,10 +738,10 @@ export const DmxPanel: React.FC<DmxPanelProps> = ({
               <li>
                 Dans chaque colonne, créez <strong>4 scènes distinctes</strong> :
                 <ul className="list-disc list-inside pl-5 mt-1 space-y-1 text-slate-300">
-                  <li><strong className="text-emerald-300">N°X - JOUEUR</strong> : Projecteur allumé en <strong>VERT</strong> (état par défaut / en attente, 0 pt).</li>
-                  <li><strong className="text-sky-300">N°X - GAGNANT</strong> : Projecteur allumé en <strong>BLEU</strong> (le joueur a marqué au moins 1 point).</li>
-                  <li><strong className="text-amber-300">N°X - REPONSE</strong> : Projecteur allumé en <strong>JAUNE</strong> (le joueur a la main car il a buzzé en premier).</li>
-                  <li><strong className="text-rose-300">N°X - ELIMINE</strong> : Projecteur allumé en <strong>ROUGE</strong> (le candidat est éliminé).</li>
+                  <li><strong className="text-emerald-300">N°X - ATTENTE</strong> : Projecteur allumé en <strong>VERT</strong> (position d'attente / par défaut, 0 à 2 pts).</li>
+                  <li><strong className="text-sky-300">N°X - BUZZ</strong> : Projecteur allumé en <strong>BLEU</strong> (le joueur a la main car il a buzzé).</li>
+                  <li><strong className="text-amber-300">N°X - QUALIFIE</strong> : Projecteur allumé en <strong>JAUNE</strong> (le joueur arrive à 3 points / qualifié jusqu'à la nouvelle manche).</li>
+                  <li><strong className="text-rose-300">N°X - ELIMINE</strong> : Projecteur allumé en <strong>ROUGE</strong> (le candidat est éliminé jusqu'à la nouvelle manche).</li>
                 </ul>
               </li>
               <li>

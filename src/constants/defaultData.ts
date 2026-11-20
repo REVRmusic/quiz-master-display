@@ -6,12 +6,12 @@ export const DEFAULT_DMX_CONFIG: DmxConfig = {
   autoFocusSunlite: true,
   delayMs: 80,
   playerMappings: [
-    { green: 'A', blue: 'Z', yellow: 'W', red: 'E' }, // Joueur 1 (A: Joueur, Z: Gagnant, W: Réponse, E: Éliminé)
-    { green: 'R', blue: 'T', yellow: 'U', red: 'Y' }, // Joueur 2 (R: Joueur, T: Gagnant, U: Réponse, Y: Éliminé)
-    { green: 'Q', blue: 'S', yellow: 'X', red: 'D' }, // Joueur 3 (Q: Joueur, S: Gagnant, X: Réponse, D: Éliminé)
-    { green: 'F', blue: 'G', yellow: 'V', red: 'H' }, // Joueur 4 (F: Joueur, G: Gagnant, V: Réponse, H: Éliminé)
-    { green: 'J', blue: 'K', yellow: 'B', red: 'L' }, // Joueur 5
-    { green: 'M', blue: 'O', yellow: 'P', red: 'N' }, // Joueur 6
+    { green: 'Z', blue: 'W', yellow: 'A', red: 'E' }, // Joueur 1 (Vert: Z, Bleu: W, Jaune: A, Rouge: E)
+    { green: 'T', blue: 'U', yellow: 'R', red: 'Y' }, // Joueur 2 (Vert: T, Bleu: U, Jaune: R, Rouge: Y)
+    { green: 'S', blue: 'X', yellow: 'Q', red: 'D' }, // Joueur 3 (Vert: S, Bleu: X, Jaune: Q, Rouge: D)
+    { green: 'G', blue: 'V', yellow: 'F', red: 'H' }, // Joueur 4 (Vert: G, Bleu: V, Jaune: F, Rouge: H)
+    { green: 'J', blue: 'B', yellow: 'K', red: 'L' }, // Joueur 5
+    { green: 'M', blue: 'P', yellow: 'O', red: 'N' }, // Joueur 6
   ],
   intermissionKey: '',
   victoryFlashKey: '',
