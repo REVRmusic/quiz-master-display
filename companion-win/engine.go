@@ -64,15 +64,11 @@ func (e *DmxEngine) resolveConfig(state *QuizState) DmxConfig {
 		defMap := def.PlayerMappings[i]
 		if i < len(cfg.PlayerMappings) {
 			cur := cfg.PlayerMappings[i]
-			// Auto-migrate legacy mapping from previous version (e.g. green=A, blue=Z)
-			if (i == 0 && (cur.Green == "A" || cur.Blue == "Z")) ||
-				(i == 1 && (cur.Green == "R" || cur.Blue == "T")) ||
-				(i == 2 && (cur.Green == "Q" || cur.Blue == "S")) ||
-				(i == 3 && (cur.Green == "F" || cur.Blue == "G")) {
-				cur.Green = defMap.Green
-				cur.Blue = defMap.Blue
-				cur.Yellow = defMap.Yellow
-				cur.Red = defMap.Red
+			// Strictly enforce the official key mappings for players 1 to 4 (Z/W/A/E, T/U/R/Y, S/X/Q/D, G/V/F/H)
+			if i < 4 {
+				if cur.Green != defMap.Green || cur.Blue != defMap.Blue || cur.Yellow != defMap.Yellow || cur.Red != defMap.Red {
+					cur = defMap
+				}
 			}
 			// Fill any missing individual field with default
 			if strings.TrimSpace(cur.Green) == "" {

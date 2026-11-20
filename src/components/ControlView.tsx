@@ -639,18 +639,18 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
             const answeringPlayer = state.players.find((p) => p.id === state.answeringPlayerId);
             if (!answeringPlayer) return null;
             return (
-              <div className="mb-4 bg-gradient-to-r from-yellow-950/90 via-amber-950/70 to-slate-900 border-2 border-yellow-400 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4 animate-scale-up">
+              <div className="mb-4 bg-gradient-to-r from-sky-950/90 via-blue-950/70 to-slate-900 border-2 border-sky-400 rounded-2xl p-4 shadow-xl flex flex-wrap items-center justify-between gap-4 animate-scale-up">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-yellow-400 text-slate-950 font-black text-xl flex items-center justify-center shadow-lg animate-bounce">
+                  <div className="w-10 h-10 rounded-xl bg-sky-400 text-slate-950 font-black text-xl flex items-center justify-center shadow-lg animate-bounce">
                     ⚡
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-yellow-400 text-slate-950">
-                        A la main (Buzzé en premier)
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-sky-400 text-slate-950">
+                        A la main (Buzzé)
                       </span>
-                      <span className="text-xs text-yellow-300 font-semibold">
-                        Lumière DMX JAUNE active
+                      <span className="text-xs text-sky-300 font-semibold">
+                        Lumière DMX BLEUE active
                       </span>
                     </div>
                     <h4 className="text-lg font-black text-white mt-0.5">
@@ -666,7 +666,7 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
                       adjustPlayerScore(answeringPlayer.id, 1);
                     }}
                     className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-lg flex items-center gap-1.5 transition-all active:scale-95"
-                    title="Valider la réponse et attribuer +1 point (Passe en BLEU)"
+                    title="Valider la réponse et attribuer +1 point (Repasse en VERT)"
                   >
                     ✓ Bonne réponse (+1 pt)
                   </button>
@@ -705,7 +705,7 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
               Pupitres des Candidats (Touches Clavier 1 à {state.players.length})
             </h3>
             <span className="text-xs text-slate-500">
-              Tapez <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono">1</kbd>, <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono">2</kbd>... pour +1 pt • Gros boutons <strong className="text-amber-300">BUZZ</strong> pour donner la main
+              Tapez <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono">1</kbd>, <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono">2</kbd>... pour +1 pt • Gros boutons <strong className="text-sky-400">BUZZ</strong> pour donner la main
             </span>
           </div>
 
@@ -748,12 +748,12 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
                 : 'text-emerald-300 drop-shadow-[0_4px_16px_rgba(52,211,153,0.3)]';
 
               const buzzerStyle = isAnswering && !isEliminated
-                ? 'bg-gradient-to-b from-yellow-300 via-amber-400 to-yellow-500 text-slate-950 border-yellow-200 ring-4 ring-yellow-400/80 ring-offset-4 ring-offset-slate-950 shadow-[0_0_35px_rgba(250,204,21,0.9)] animate-pulse'
+                ? 'bg-gradient-to-b from-sky-300 via-sky-400 to-blue-500 text-slate-950 border-sky-200 ring-4 ring-sky-400/80 ring-offset-4 ring-offset-slate-950 shadow-[0_0_35px_rgba(56,189,248,0.9)] animate-pulse'
                 : isEliminated
                 ? 'bg-slate-900 border-slate-800 text-slate-600 opacity-30 cursor-not-allowed shadow-none'
                 : isWinner
-                ? 'bg-gradient-to-b from-amber-400 via-yellow-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 border-amber-300 shadow-[0_6px_0_#92400e,0_12px_24px_rgba(245,158,11,0.35)] active:translate-y-1 active:shadow-[0_2px_0_#92400e]'
-                : 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 border-amber-300/90 shadow-[0_6px_0_#92400e,0_12px_24px_rgba(245,158,11,0.35)] active:translate-y-1 active:shadow-[0_2px_0_#92400e]';
+                ? 'bg-gradient-to-b from-slate-800 to-slate-900 text-slate-400 border-slate-700 shadow-[0_6px_0_#1e293b,0_12px_24px_rgba(0,0,0,0.35)]'
+                : 'bg-gradient-to-b from-sky-500 via-sky-600 to-blue-700 hover:from-sky-400 hover:to-blue-600 text-white border-sky-400/80 shadow-[0_6px_0_#0369a1,0_12px_24px_rgba(2,132,199,0.35)] active:translate-y-1 active:shadow-[0_2px_0_#0369a1]';
 
               return (
                 <div key={player.id} className="flex flex-col gap-3">

@@ -1,6 +1,7 @@
 import { QuizState, SyncAction, WinnerHistoryItem } from '../types';
 import { INITIAL_QUIZ_STATE } from '../constants/defaultData';
 import { supabaseService } from './supabase';
+import { resolveDmxConfig } from '../utils/dmx';
 
 const CHANNEL_NAME = 'quiz_master_sync_channel_v1';
 const STORAGE_KEY = 'quiz_master_state_v1';
@@ -62,6 +63,7 @@ class SyncService {
     if (cloudState && (!hasLocalState || cloudState.lastUpdated > (localState?.lastUpdated || 0))) {
       this.lastLocalSavedAt = cloudState.lastUpdated;
       const merged = { ...INITIAL_QUIZ_STATE, ...cloudState };
+      merged.dmxConfig = resolveDmxConfig(merged.dmxConfig);
       this.saveLocalState(merged);
       this.notifyStateListeners(merged);
     }
@@ -71,6 +73,7 @@ class SyncService {
       if (remoteState && remoteState.lastUpdated > this.lastLocalSavedAt) {
         this.lastLocalSavedAt = remoteState.lastUpdated;
         const merged = { ...INITIAL_QUIZ_STATE, ...remoteState };
+        merged.dmxConfig = resolveDmxConfig(merged.dmxConfig);
         this.saveLocalState(merged);
         this.notifyStateListeners(merged);
       }
@@ -189,7 +192,9 @@ class SyncService {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        return { ...INITIAL_QUIZ_STATE, ...parsed };
+        const merged = { ...INITIAL_QUIZ_STATE, ...parsed };
+        merged.dmxConfig = resolveDmxConfig(merged.dmxConfig);
+        return merged;
       }
     } catch (e) {
       console.error('Error loading state from localStorage', e);

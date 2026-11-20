@@ -74,15 +74,18 @@ export function resolveDmxConfig(dmxConfig?: DmxConfig): DmxConfig {
   if (!dmxConfig) return DEFAULT_DMX_CONFIG;
 
   const sanitizeMapping = (m: Partial<DmxPlayerMapping> | undefined, def: DmxPlayerMapping, idx: number): DmxPlayerMapping => {
-    // Auto-migrate legacy mappings from previous versions where green was A or blue was Z
-    const isLegacyOld =
-      (idx === 0 && (m?.green === 'A' || m?.blue === 'Z')) ||
-      (idx === 1 && (m?.green === 'R' || m?.blue === 'T')) ||
-      (idx === 2 && (m?.green === 'Q' || m?.blue === 'S')) ||
-      (idx === 3 && (m?.green === 'F' || m?.blue === 'G'));
+    // For the 4 active quiz players, strictly enforce the official key matrix (Z/W/A/E, T/U/R/Y, S/X/Q/D, G/V/F/H)
+    if (idx < 4) {
+      const isOutdated =
+        !m ||
+        m.green !== def.green ||
+        m.blue !== def.blue ||
+        m.yellow !== def.yellow ||
+        m.red !== def.red;
 
-    if (isLegacyOld) {
-      return { ...def };
+      if (isOutdated) {
+        return { ...def };
+      }
     }
 
     return {
