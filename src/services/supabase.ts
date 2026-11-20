@@ -102,6 +102,36 @@ class SupabaseService {
   }
 
   /**
+   * Save an ephemeral action to Supabase without overwriting the session state
+   */
+  public async saveAction(action: SyncAction): Promise<boolean> {
+    try {
+      const payload: Record<string, unknown> = {
+        last_action: {
+          ...action,
+          _action_time: Date.now(),
+        },
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from(SESSIONS_TABLE)
+        .update(payload)
+        .eq('id', DEFAULT_SESSION_ID);
+
+      if (error) {
+        console.warn('[Supabase] Error saving action to', SESSIONS_TABLE, error.message);
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      console.warn('[Supabase] Network exception saving action', err);
+      return false;
+    }
+  }
+
+  /**
    * Fetch current session from Supabase
    */
   public async loadSession(): Promise<{ state: QuizState | null; lastAction: SyncAction | null }> {

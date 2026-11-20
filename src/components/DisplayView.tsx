@@ -24,8 +24,8 @@ export const DisplayView: React.FC<DisplayViewProps> = ({ initialState }) => {
   // Listen for sync state & actions
   useEffect(() => {
     // Send pong and request fresh state on initial mount so host knows display is alive and returns state
-    syncService.sendAction({ type: 'PONG' });
-    syncService.sendAction({ type: 'STATE_REQUEST' });
+    syncService.sendRawAction({ type: 'PONG' });
+    syncService.sendRawAction({ type: 'STATE_REQUEST' });
 
     const unsubState = syncService.onState((newState) => {
       // Check for score changes to trigger animation & sounds

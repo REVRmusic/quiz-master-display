@@ -42,15 +42,25 @@ class SyncService {
       });
 
       // Initialize Supabase realtime subscription for cross-device support
+      const initialLocal = this.loadState();
+      this.lastLocalSavedAt = initialLocal?.lastUpdated || 0;
       this.initSupabaseSync();
     }
   }
 
   private async initSupabaseSync() {
+    const localState = this.loadState();
+    this.lastLocalSavedAt = Math.max(this.lastLocalSavedAt, localState?.lastUpdated || 0);
+
     // Attempt initial pull from Supabase
-    const { state: cloudState } = await supabaseService.loadSession();
+    const { state: cloudState, lastAction: cloudAction } = await supabaseService.loadSession();
+    if (cloudAction) {
+      this.lastProcessedActionTime = (cloudAction as any)._action_time || Date.now();
+    }
+
     const hasLocalState = Boolean(localStorage.getItem(STORAGE_KEY));
-    if (cloudState && (!hasLocalState || cloudState.lastUpdated > (this.loadState()?.lastUpdated || 0))) {
+    if (cloudState && (!hasLocalState || cloudState.lastUpdated > (localState?.lastUpdated || 0))) {
+      this.lastLocalSavedAt = cloudState.lastUpdated;
       const merged = { ...INITIAL_QUIZ_STATE, ...cloudState };
       this.saveLocalState(merged);
       this.notifyStateListeners(merged);
@@ -58,7 +68,8 @@ class SyncService {
 
     // Subscribe to remote updates via Supabase WebSockets
     supabaseService.subscribeToSession((remoteState, remoteAction) => {
-      if (remoteState.lastUpdated !== this.lastLocalSavedAt) {
+      if (remoteState && remoteState.lastUpdated > this.lastLocalSavedAt) {
+        this.lastLocalSavedAt = remoteState.lastUpdated;
         const merged = { ...INITIAL_QUIZ_STATE, ...remoteState };
         this.saveLocalState(merged);
         this.notifyStateListeners(merged);
@@ -94,8 +105,12 @@ class SyncService {
 
   private handleIncomingAction(action: SyncAction) {
     if (action.type === 'STATE_UPDATE') {
-      this.saveLocalState(action.payload);
-      this.notifyStateListeners(action.payload);
+      const incomingTime = action.payload.lastUpdated || 0;
+      if (incomingTime >= this.lastLocalSavedAt) {
+        this.lastLocalSavedAt = incomingTime;
+        this.saveLocalState(action.payload);
+        this.notifyStateListeners(action.payload);
+      }
     } else if (action.type === 'PING') {
       this.sendRawAction({ type: 'PONG' });
     } else if (action.type === 'PONG') {
@@ -193,11 +208,14 @@ class SyncService {
 
   public saveState(state: QuizState, action?: SyncAction) {
     if (typeof window === 'undefined') return;
-    const now = Date.now();
+    const now = Math.max(Date.now(), this.lastLocalSavedAt + 1);
     this.lastLocalSavedAt = now;
     const enriched = { ...state, lastUpdated: now };
     this.saveLocalState(enriched);
     this.sendRawAction({ type: 'STATE_UPDATE', payload: enriched });
+    if (action) {
+      this.sendRawAction(action);
+    }
 
     // Sync to Supabase cloud in background with small debounce
     if (this.saveDebounceTimer) {
@@ -211,17 +229,11 @@ class SyncService {
 
   public sendAction(action: SyncAction) {
     this.sendRawAction(action);
-    // Cancel any pending debounced save so it doesn't overwrite last_action
-    if (this.saveDebounceTimer) {
-      clearTimeout(this.saveDebounceTimer);
-      this.saveDebounceTimer = null;
-    }
-    // Also push action to Supabase for multi-device sync
-    const currentState = this.loadState();
-    supabaseService.saveSession(currentState, action);
+    // Push ephemeral action to Supabase for multi-device sync without overwriting session state
+    supabaseService.saveAction(action);
   }
 
-  private sendRawAction(action: SyncAction) {
+  public sendRawAction(action: SyncAction) {
     if (this.channel) {
       try {
         this.channel.postMessage(action);

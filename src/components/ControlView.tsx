@@ -74,10 +74,12 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
     });
 
     const unsubAction = syncService.onAction((action: SyncAction) => {
-      if (action.type === 'PONG' || action.type === 'STATE_REQUEST') {
+      if (action.type === 'PONG') {
+        setIsDisplayConnected(true);
+      } else if (action.type === 'STATE_REQUEST') {
         setIsDisplayConnected(true);
         // Reply with current state so the display is guaranteed up to date
-        syncService.sendAction({ type: 'STATE_UPDATE', payload: stateRef.current });
+        syncService.sendRawAction({ type: 'STATE_UPDATE', payload: stateRef.current });
       }
     });
 
@@ -100,6 +102,7 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
   const updateStateAndBroadcast = (partial: Partial<QuizState>, action?: SyncAction) => {
     setState((prev) => {
       const next = { ...prev, ...partial, lastUpdated: Date.now() };
+      stateRef.current = next;
       syncService.saveState(next, action);
       return next;
     });
@@ -204,17 +207,14 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
       if (triggeredWin) {
         soundEffects.playWin();
         actionToSend = { type: 'TRIGGER_CONFETTI', payload: { intensity: 'massive' } };
-        syncService.sendAction(actionToSend);
         recordWinner(winningPlayerName, winningPlayerScore, newPlayers);
       } else {
         soundEffects.playCorrect();
         actionToSend = { type: 'PLAY_SOUND', payload: { sound: 'correct' } };
-        syncService.sendAction(actionToSend);
       }
     } else if (delta < 0) {
       soundEffects.playWrong();
       actionToSend = { type: 'PLAY_SOUND', payload: { sound: 'wrong' } };
-      syncService.sendAction(actionToSend);
     }
 
     updateStateAndBroadcast(
@@ -237,7 +237,6 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
 
     soundEffects.playBuzz();
     const action: SyncAction = { type: 'PLAYER_BUZZ', payload: { playerId } };
-    syncService.sendAction(action);
     updateStateAndBroadcast({ answeringPlayerId: playerId }, action);
   };
 
@@ -277,19 +276,23 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
 
   // Toggle player elimination (Excel row 7 "X" = "Perdu")
   const togglePlayerElimination = (playerId: string) => {
+    let actionToSend: SyncAction | undefined;
     const newPlayers = state.players.map((p) => {
       if (p.id !== playerId) return p;
       const nextStatus = p.status === 'eliminated' ? ('active' as const) : ('eliminated' as const);
       if (nextStatus === 'eliminated') {
         soundEffects.playWrong();
-        syncService.sendAction({ type: 'PLAY_SOUND', payload: { sound: 'wrong' } });
+        actionToSend = { type: 'PLAY_SOUND', payload: { sound: 'wrong' } };
       }
       return { ...p, status: nextStatus };
     });
-    updateStateAndBroadcast({
-      players: newPlayers,
-      answeringPlayerId: state.answeringPlayerId === playerId ? null : state.answeringPlayerId,
-    });
+    updateStateAndBroadcast(
+      {
+        players: newPlayers,
+        answeringPlayerId: state.answeringPlayerId === playerId ? null : state.answeringPlayerId,
+      },
+      actionToSend
+    );
   };
 
   // Declare winner manually
@@ -303,7 +306,6 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
 
     soundEffects.playWin();
     const action: SyncAction = { type: 'TRIGGER_CONFETTI', payload: { intensity: 'massive' } };
-    syncService.sendAction(action);
 
     recordWinner(targetPlayer.name, targetPlayer.score, newPlayers);
 
@@ -690,7 +692,6 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
                     type="button"
                     onClick={() => {
                       adjustPlayerScore(answeringPlayer.id, 1);
-                      updateStateAndBroadcast({ answeringPlayerId: null }, { type: 'CLEAR_BUZZ' });
                     }}
                     className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-lg flex items-center gap-1.5 transition-all active:scale-95"
                     title="Valider la réponse et attribuer +1 point (Passe en BLEU)"
@@ -702,8 +703,10 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
                     type="button"
                     onClick={() => {
                       soundEffects.playWrong();
-                      syncService.sendAction({ type: 'PLAY_SOUND', payload: { sound: 'wrong' } });
-                      updateStateAndBroadcast({ answeringPlayerId: null }, { type: 'CLEAR_BUZZ' });
+                      updateStateAndBroadcast(
+                        { answeringPlayerId: null },
+                        { type: 'PLAY_SOUND', payload: { sound: 'wrong' } }
+                      );
                     }}
                     className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow flex items-center gap-1.5 transition-all active:scale-95"
                     title="Mauvaise réponse (Son buzzer et libération de la main)"
