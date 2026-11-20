@@ -59,17 +59,40 @@ func (e *DmxEngine) resolveConfig(state *QuizState) DmxConfig {
 		return def
 	}
 	cfg := *state.DmxConfig
-	if len(cfg.PlayerMappings) < 6 {
-		merged := make([]DmxPlayerMapping, 6)
-		for i := 0; i < 6; i++ {
-			if i < len(cfg.PlayerMappings) {
-				merged[i] = cfg.PlayerMappings[i]
-			} else {
-				merged[i] = def.PlayerMappings[i]
+	merged := make([]DmxPlayerMapping, 6)
+	for i := 0; i < 6; i++ {
+		defMap := def.PlayerMappings[i]
+		if i < len(cfg.PlayerMappings) {
+			cur := cfg.PlayerMappings[i]
+			// Auto-migrate legacy mapping from previous version (where green and blue were inverted or yellow was empty)
+			if (i == 0 && cur.Green == "Z" && cur.Blue == "A") ||
+				(i == 1 && cur.Green == "T" && cur.Blue == "R") ||
+				(i == 2 && cur.Green == "S" && cur.Blue == "Q") ||
+				(i == 3 && cur.Green == "G" && cur.Blue == "F") {
+				cur.Green = defMap.Green
+				cur.Blue = defMap.Blue
+				cur.Yellow = defMap.Yellow
+				cur.Red = defMap.Red
 			}
+			// Fill any missing individual field with default
+			if strings.TrimSpace(cur.Green) == "" {
+				cur.Green = defMap.Green
+			}
+			if strings.TrimSpace(cur.Blue) == "" {
+				cur.Blue = defMap.Blue
+			}
+			if strings.TrimSpace(cur.Yellow) == "" {
+				cur.Yellow = defMap.Yellow
+			}
+			if strings.TrimSpace(cur.Red) == "" {
+				cur.Red = defMap.Red
+			}
+			merged[i] = cur
+		} else {
+			merged[i] = defMap
 		}
-		cfg.PlayerMappings = merged
 	}
+	cfg.PlayerMappings = merged
 	if cfg.DelayMs <= 0 {
 		cfg.DelayMs = 80
 	}
@@ -235,10 +258,10 @@ func (e *DmxEngine) ProcessRemoteUpdate(state *QuizState, action *SyncAction) {
 		// Send shortcut on first init or whenever color changes (or returning from intermission)
 		returningFromIntermission := e.lastDisplayMode == "intermission" && state.DisplayMode != "intermission"
 		if !existed || prevColor != color || returningFromIntermission {
-			e.lastPlayerColors[i] = color
-			if cfg.Enabled && state.DisplayMode != "intermission" {
-				shortcut := shortcutForColor(cfg.PlayerMappings[i], color)
-				if shortcut != "" {
+			shortcut := shortcutForColor(cfg.PlayerMappings[i], color)
+			if shortcut != "" {
+				e.lastPlayerColors[i] = color
+				if cfg.Enabled && state.DisplayMode != "intermission" {
 					tag := "Changement"
 					if isFirstInit {
 						tag = "Initialisation"
@@ -250,6 +273,8 @@ func (e *DmxEngine) ProcessRemoteUpdate(state *QuizState, action *SyncAction) {
 						desc:     fmt.Sprintf("%s → %s (%s) : [%s]", tag, p.Name, colorLabelFr(color), shortcut),
 					})
 				}
+			} else {
+				e.addLogLocked("warn", fmt.Sprintf("Aucune touche configurée pour %s (%s)", p.Name, colorLabelFr(color)))
 			}
 		}
 	}
@@ -327,13 +352,15 @@ func (e *DmxEngine) buildFullResyncLocked(state *QuizState, cfg DmxConfig) []que
 			break
 		}
 		color := computePlayerColor(p, state.WinScore, answeringId)
-		e.lastPlayerColors[i] = color
 		shortcut := shortcutForColor(cfg.PlayerMappings[i], color)
 		if shortcut != "" {
+			e.lastPlayerColors[i] = color
 			keys = append(keys, queuedKey{
 				shortcut: shortcut,
 				desc:     fmt.Sprintf("Resync → %s (%s) : [%s]", p.Name, colorLabelFr(color), shortcut),
 			})
+		} else {
+			e.addLogLocked("warn", fmt.Sprintf("Resync ignoré pour %s : touche manquante (%s)", p.Name, colorLabelFr(color)))
 		}
 	}
 	return keys
@@ -375,16 +402,26 @@ func (e *DmxEngine) SendManualTest(shortcut string, label string) {
 }
 
 func (e *DmxEngine) dispatchKeys(keys []queuedKey, cfg DmxConfig) {
+	if len(keys) == 0 {
+		return
+	}
+
 	delay := time.Duration(cfg.DelayMs) * time.Millisecond
 	if delay < 30*time.Millisecond {
 		delay = 30 * time.Millisecond
+	}
+
+	autoFocus := cfg.AutoFocusDaslight || cfg.AutoFocusSunlite
+	requireFocus := cfg.RequireDaslightFocus || cfg.RequireSunliteFocus
+	if autoFocus {
+		EnsureDaslightFocused()
 	}
 
 	for idx, k := range keys {
 		if idx > 0 {
 			time.Sleep(delay)
 		}
-		err := SendShortcut(k.shortcut, cfg.AutoFocusSunlite, cfg.RequireSunliteFocus)
+		err := SendShortcut(k.shortcut, autoFocus, requireFocus)
 		if err != nil {
 			e.Log("error", fmt.Sprintf("Échec envoi %s (%v)", k.desc, err))
 		} else {

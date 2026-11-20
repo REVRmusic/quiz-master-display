@@ -72,12 +72,23 @@ export function getDmxColorMeta(color: DmxColor): {
 export function resolveDmxConfig(dmxConfig?: DmxConfig): DmxConfig {
   if (!dmxConfig) return DEFAULT_DMX_CONFIG;
 
-  const sanitizeMapping = (m: Partial<DmxPlayerMapping> | undefined, def: DmxPlayerMapping): DmxPlayerMapping => {
+  const sanitizeMapping = (m: Partial<DmxPlayerMapping> | undefined, def: DmxPlayerMapping, idx: number): DmxPlayerMapping => {
+    // Detect legacy mapping from previous version where green and blue were inverted or yellow missing
+    const isLegacyInverted =
+      (idx === 0 && m?.green === 'Z' && m?.blue === 'A') ||
+      (idx === 1 && m?.green === 'T' && m?.blue === 'R') ||
+      (idx === 2 && m?.green === 'S' && m?.blue === 'Q') ||
+      (idx === 3 && m?.green === 'G' && m?.blue === 'F');
+
+    if (isLegacyInverted) {
+      return { ...def };
+    }
+
     return {
-      green: m?.green || def.green,
-      blue: m?.blue || def.blue,
-      yellow: m?.yellow || def.yellow,
-      red: m?.red || def.red,
+      green: (m?.green && m.green.trim()) || def.green,
+      blue: (m?.blue && m.blue.trim()) || def.blue,
+      yellow: (m?.yellow && m.yellow.trim()) || def.yellow,
+      red: (m?.red && m.red.trim()) || def.red,
     };
   };
 
@@ -85,7 +96,7 @@ export function resolveDmxConfig(dmxConfig?: DmxConfig): DmxConfig {
   for (let i = 0; i < 6; i++) {
     const def = DEFAULT_DMX_CONFIG.playerMappings[i];
     const cur = dmxConfig.playerMappings?.[i];
-    mappings.push(sanitizeMapping(cur, def));
+    mappings.push(sanitizeMapping(cur, def, i));
   }
 
   return {

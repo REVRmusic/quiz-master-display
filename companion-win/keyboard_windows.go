@@ -125,6 +125,17 @@ func FindSunliteWindow() (uintptr, string) {
 	return FindDaslightWindow()
 }
 
+// EnsureDaslightFocused brings Daslight Virtual Controller 3 to foreground if not already active
+func EnsureDaslightFocused() {
+	activeTitle := GetActiveWindowTitle()
+	if !isDmxWindow(activeTitle) {
+		if hwnd, _ := FindDaslightWindow(); hwnd != 0 {
+			focusWindow(hwnd)
+			time.Sleep(80 * time.Millisecond)
+		}
+	}
+}
+
 func focusWindow(hwnd uintptr) {
 	if hwnd == 0 {
 		return
@@ -149,7 +160,7 @@ func focusWindow(hwnd uintptr) {
 	} else {
 		procSetForegroundWindow.Call(hwnd)
 	}
-	time.Sleep(30 * time.Millisecond)
+	time.Sleep(80 * time.Millisecond)
 }
 
 func sendKeyEvent(vk uint16, up bool) {

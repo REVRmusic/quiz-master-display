@@ -36,7 +36,6 @@ func main() {
 
 	hub = NewLocalHub(engine)
 	hub.Start(LocalBridgePort)
-	engine.Log("info", fmt.Sprintf("Pont local démarré sur http://127.0.0.1:%d (WS /ws)", LocalBridgePort))
 
 	_, daslightTitle := FindDaslightWindow()
 	if daslightTitle != "" {

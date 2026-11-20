@@ -21,6 +21,8 @@ func FindSunliteWindow() (uintptr, string) {
 	return FindDaslightWindow()
 }
 
+func EnsureDaslightFocused() {}
+
 func SendShortcut(shortcut string, autoFocusTarget bool, requireTargetFocus bool) error {
 	clean := strings.TrimSpace(shortcut)
 	if clean == "" {

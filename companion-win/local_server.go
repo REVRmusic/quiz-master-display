@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
 
@@ -113,6 +114,14 @@ func (h *LocalHub) handleWS(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *LocalHub) Start(port int) {
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		h.engine.Log("warn", fmt.Sprintf("Port local %d déjà utilisé : une ancienne instance de QuizMaster Companion est probablement encore ouverte en arrière-plan (fermez-la pour éviter les conflits)", port))
+		return
+	}
+	h.engine.Log("info", fmt.Sprintf("Pont local démarré sur http://%s (WS /ws)", addr))
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", h.handleWS)
 	mux.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
@@ -133,14 +142,14 @@ func (h *LocalHub) Start(port int) {
 <h1>💡 QuizMaster DMX Companion (v%s)</h1>
 <div class="card">
 <p>Supabase Cloud : <span class="%s">%v</span></p>
-<p>Fenêtre Sunlite détectée : <code>%s</code></p>
+<p>Fenêtre Daslight détectée : <code>%s</code></p>
 <p>Fenêtre active actuelle : <code>%s</code></p>
 </div>
 <div class="card"><h3>Derniers événements</h3><ul>`,
 			snap.Version,
 			map[bool]string{true: "ok", false: "warn"}[snap.SupabaseConnected],
 			map[bool]string{true: "CONNECTÉ ✓", false: "RECONNEXION..."}[snap.SupabaseConnected],
-			snap.SunliteWindow,
+			snap.DaslightWindow,
 			snap.ActiveWindow,
 		)
 		for i := len(snap.Logs) - 1; i >= 0; i-- {
@@ -150,10 +159,7 @@ func (h *LocalHub) Start(port int) {
 		fmt.Fprint(w, `</ul></div></body></html>`)
 	})
 
-	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	go func() {
-		if err := http.ListenAndServe(addr, mux); err != nil {
-			h.engine.Log("error", fmt.Sprintf("Port local %d indisponible: %v", port, err))
-		}
+		_ = http.Serve(listener, mux)
 	}()
 }

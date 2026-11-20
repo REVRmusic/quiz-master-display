@@ -83,3 +83,49 @@ func TestEngineStateDiffing(t *testing.T) {
 		t.Fatalf("player 3 expected red, got %s", snap.PlayerColors[3])
 	}
 }
+
+func TestLegacyConfigAutoMigration(t *testing.T) {
+	eng := NewDmxEngine(nil)
+
+	// Legacy config from old Sunlite version with inverted keys and missing yellow
+	legacyCfg := DmxConfig{
+		Enabled: true,
+		PlayerMappings: []DmxPlayerMapping{
+			{Green: "Z", Blue: "A", Red: "E"},
+			{Green: "T", Blue: "R", Red: "Y"},
+			{Green: "S", Blue: "Q", Red: "D"},
+			{Green: "G", Blue: "F", Red: "H"},
+			{Green: "X", Blue: "W", Red: "C"},
+			{Green: "B", Blue: "V", Red: "N"},
+		},
+	}
+
+	state := &QuizState{
+		WinScore:    3,
+		DisplayMode: "scoreboard",
+		DmxConfig:   &legacyCfg,
+		Players: []Player{
+			{ID: "p1", Name: "Joueur 1", Score: 0, Status: "active"},
+			{ID: "p2", Name: "Joueur 2", Score: 0, Status: "active"},
+			{ID: "p3", Name: "Joueur 3", Score: 0, Status: "active"},
+			{ID: "p4", Name: "Joueur 4", Score: 0, Status: "active"},
+		},
+	}
+
+	cfg := eng.resolveConfig(state)
+	// Joueur 1 should now have Green: A, Blue: Z, Yellow: W, Red: E
+	if cfg.PlayerMappings[0].Green != "A" || cfg.PlayerMappings[0].Blue != "Z" || cfg.PlayerMappings[0].Yellow != "W" {
+		t.Fatalf("expected P1 auto-migrated to A/Z/W/E, got %+v", cfg.PlayerMappings[0])
+	}
+	if cfg.PlayerMappings[1].Green != "R" || cfg.PlayerMappings[1].Blue != "T" || cfg.PlayerMappings[1].Yellow != "U" {
+		t.Fatalf("expected P2 auto-migrated to R/T/U/Y, got %+v", cfg.PlayerMappings[1])
+	}
+
+	eng.ProcessRemoteUpdate(state, nil)
+	snap := eng.GetSnapshot()
+	for i := 0; i < 4; i++ {
+		if snap.PlayerColors[i] != "green" {
+			t.Fatalf("player %d expected green, got %s", i, snap.PlayerColors[i])
+		}
+	}
+}
