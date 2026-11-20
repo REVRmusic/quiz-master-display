@@ -12,7 +12,7 @@ export const HelpShortcutsModal: React.FC<HelpShortcutsModalProps> = ({ onClose 
     { key: 'Espace', desc: 'Démarrer / Mettre en pause le Chronomètre', badge: 'Chrono' },
     { key: 'B', desc: 'Déclencher le son Buzzer (Mauvaise réponse)', badge: 'Audio' },
     { key: 'V ou G', desc: 'Déclencher la pluie de Confettis & Fanfare de Victoire', badge: 'Spectacle' },
-    { key: 'R', desc: 'Nouvelle Manche (Remet les scores à 0 en gardant les noms)', badge: 'Partie' },
+    { key: 'R', desc: 'Nouvelle Manche (Remet les scores et les prénoms à zéro)', badge: 'Partie' },
     { key: 'F', desc: 'Basculer en Plein Écran', badge: 'Affichage' },
   ];
 

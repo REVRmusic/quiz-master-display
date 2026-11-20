@@ -23,8 +23,9 @@ export const DisplayView: React.FC<DisplayViewProps> = ({ initialState }) => {
 
   // Listen for sync state & actions
   useEffect(() => {
-    // Send pong on initial mount so host knows display is alive
+    // Send pong and request fresh state on initial mount so host knows display is alive and returns state
     syncService.sendAction({ type: 'PONG' });
+    syncService.sendAction({ type: 'STATE_REQUEST' });
 
     const unsubState = syncService.onState((newState) => {
       // Check for score changes to trigger animation & sounds
@@ -207,11 +208,25 @@ export const DisplayView: React.FC<DisplayViewProps> = ({ initialState }) => {
                 En partenariat avec :
               </p>
               <div className="flex flex-wrap justify-center items-center gap-6">
-                {state.sponsors.filter(s => s.enabled).map((s) => (
-                  <div key={s.id} className="bg-white/95 p-3 px-6 rounded-2xl shadow-xl border border-white/40">
-                    <img src={s.logoUrl} alt={s.name} className="h-16 max-w-[260px] object-contain" />
-                  </div>
-                ))}
+                {state.sponsorDisplayMode === 'single' ? (
+                  (() => {
+                    const single =
+                      state.sponsors.find((s) => s.id === state.activeSponsorId) ||
+                      state.sponsors.filter((s) => s.enabled)[0] ||
+                      state.sponsors[0];
+                    return single ? (
+                      <div key={single.id} className="bg-white/95 p-3 px-6 rounded-2xl shadow-xl border border-white/40">
+                        <img src={single.logoUrl} alt={single.name} className="h-16 max-w-[260px] object-contain" />
+                      </div>
+                    ) : null;
+                  })()
+                ) : (
+                  state.sponsors.filter(s => s.enabled).map((s) => (
+                    <div key={s.id} className="bg-white/95 p-3 px-6 rounded-2xl shadow-xl border border-white/40">
+                      <img src={s.logoUrl} alt={s.name} className="h-16 max-w-[260px] object-contain" />
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

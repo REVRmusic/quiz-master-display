@@ -94,6 +94,7 @@ class SyncService {
 
   private handleIncomingAction(action: SyncAction) {
     if (action.type === 'STATE_UPDATE') {
+      this.saveLocalState(action.payload);
       this.notifyStateListeners(action.payload);
     } else if (action.type === 'PING') {
       this.sendRawAction({ type: 'PONG' });

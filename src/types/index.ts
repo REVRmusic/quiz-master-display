@@ -82,6 +82,7 @@ export interface WinnerHistoryItem {
 
 export type SyncAction =
   | { type: 'STATE_UPDATE'; payload: QuizState }
+  | { type: 'STATE_REQUEST' }
   | { type: 'TRIGGER_CONFETTI'; payload?: { intensity?: 'normal' | 'massive' } }
   | { type: 'PLAY_SOUND'; payload: { sound: 'correct' | 'wrong' | 'win' | 'tick' | 'alarm' } }
   | { type: 'DMX_TEST'; payload: { key: string; label?: string } }

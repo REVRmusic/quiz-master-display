@@ -4,26 +4,33 @@ import { Sponsor, SponsorDisplayMode } from '../types';
 interface SponsorDisplayProps {
   sponsors: Sponsor[];
   activeSponsorId: string;
-  displayMode: SponsorDisplayMode;
-  carouselSpeed: number; // in seconds
+  displayMode?: SponsorDisplayMode;
+  carouselSpeed?: number; // in seconds
   themeBgColor?: string;
   className?: string;
 }
 
 export const SponsorDisplay: React.FC<SponsorDisplayProps> = ({
-  sponsors,
+  sponsors = [],
   activeSponsorId,
-  displayMode,
-  carouselSpeed,
+  displayMode = 'single',
+  carouselSpeed = 6,
   className = '',
 }) => {
-  const activeSponsors = sponsors.filter(s => s.enabled);
+  const activeSponsors = (sponsors || []).filter(s => s.enabled);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fade, setFade] = useState(true);
 
+  // Carousel strictly only when mode is 'carousel' AND there are strictly more than 1 active sponsors
+  const isCarousel = displayMode === 'carousel' && activeSponsors.length > 1;
+
   // Rotate carousel
   useEffect(() => {
-    if (displayMode !== 'carousel' || activeSponsors.length <= 1) return;
+    if (!isCarousel) {
+      setCurrentIndex(0);
+      setFade(true);
+      return;
+    }
 
     const interval = setInterval(() => {
       setFade(false);
@@ -34,17 +41,18 @@ export const SponsorDisplay: React.FC<SponsorDisplayProps> = ({
     }, Math.max(3, carouselSpeed) * 1000);
 
     return () => clearInterval(interval);
-  }, [displayMode, activeSponsors.length, carouselSpeed]);
+  }, [isCarousel, activeSponsors.length, carouselSpeed]);
 
-  if (activeSponsors.length === 0) {
+  if (!sponsors || sponsors.length === 0) {
     return null;
   }
 
   // Multi-logo band
   if (displayMode === 'grid') {
+    const listToDisplay = activeSponsors.length > 0 ? activeSponsors : sponsors;
     return (
       <div className={`flex items-center gap-3 bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-2xl shadow-2xl border border-white/40 ${className}`}>
-        {activeSponsors.map((sponsor) => (
+        {listToDisplay.map((sponsor) => (
           <div key={sponsor.id} className="flex items-center justify-center p-1 max-h-16">
             <img
               src={sponsor.logoUrl}
@@ -62,9 +70,15 @@ export const SponsorDisplay: React.FC<SponsorDisplayProps> = ({
   }
 
   // Single or Carousel
-  const currentSponsor = displayMode === 'carousel'
+  // In single/fixed mode:
+  // - Find selected activeSponsorId in sponsors
+  // - Or fallback to first active sponsor
+  // - Or first sponsor
+  const currentSponsor = isCarousel
     ? activeSponsors[currentIndex % activeSponsors.length]
-    : activeSponsors.find(s => s.id === activeSponsorId) || activeSponsors[0];
+    : sponsors.find(s => s.id === activeSponsorId)
+      || activeSponsors[0]
+      || sponsors[0];
 
   if (!currentSponsor) return null;
 
@@ -95,7 +109,7 @@ export const SponsorDisplay: React.FC<SponsorDisplayProps> = ({
         </span>
       </div>
 
-      {displayMode === 'carousel' && activeSponsors.length > 1 && (
+      {isCarousel && (
         <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-1">
           {activeSponsors.map((_, idx) => (
             <span

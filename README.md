@@ -45,7 +45,7 @@ Idéal pour piloter l'animation avec un micro dans l'autre main :
 | <kbd>Espace</kbd> | **Démarrer / Pause** le minuteur |
 | <kbd>B</kbd> | Son de **Buzzer** (mauvaise réponse) |
 | <kbd>V</kbd> ou <kbd>G</kbd> | Déclencher la **Victoire & Pluie de confettis** |
-| <kbd>R</kbd> | **Nouvelle Manche** (remet les scores à 0 en conservant les noms) |
+| <kbd>R</kbd> | **Nouvelle Manche** (remet les scores et les prénoms à zéro) |
 | <kbd>F</kbd> | Basculer en plein écran |
 
 ---

@@ -128,6 +128,12 @@ export const SponsorManager: React.FC<SponsorManagerProps> = ({
     onUpdateSponsors(updated);
   };
 
+  const handleSelectSponsor = (id: string) => {
+    const updated = sponsors.map((s) => (s.id === id ? { ...s, enabled: true } : s));
+    onUpdateSponsors(updated);
+    onUpdateActiveSponsor(id);
+  };
+
   const handleDeleteSponsor = (id: string) => {
     const updated = sponsors.filter((s) => s.id !== id);
     onUpdateSponsors(updated);
@@ -337,11 +343,23 @@ export const SponsorManager: React.FC<SponsorManagerProps> = ({
                   <div className="flex items-center gap-2 mt-0.5">
                     <span
                       className={`inline-block w-2 h-2 rounded-full ${
-                        sponsor.enabled ? 'bg-emerald-400' : 'bg-slate-600'
+                        displayMode === 'single'
+                          ? isSelected
+                            ? 'bg-purple-400'
+                            : 'bg-slate-600'
+                          : sponsor.enabled
+                          ? 'bg-emerald-400'
+                          : 'bg-slate-600'
                       }`}
                     />
                     <span className="text-xs text-slate-400">
-                      {sponsor.enabled ? 'Actif sur l\'écran' : 'Masqué'}
+                      {displayMode === 'single'
+                        ? isSelected
+                          ? 'Logo fixe affiché sur l\'écran'
+                          : 'En réserve (non affiché)'
+                        : sponsor.enabled
+                        ? 'Actif sur l\'écran'
+                        : 'Masqué'}
                     </span>
                   </div>
                 </div>
@@ -352,14 +370,14 @@ export const SponsorManager: React.FC<SponsorManagerProps> = ({
                   {displayMode === 'single' && (
                     <button
                       type="button"
-                      onClick={() => onUpdateActiveSponsor(sponsor.id)}
+                      onClick={() => handleSelectSponsor(sponsor.id)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                         isSelected
                           ? 'bg-purple-600 text-white shadow'
                           : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
                       }`}
                     >
-                      {isSelected ? 'Principal ✓' : 'Sélectionner'}
+                      {isSelected ? 'Principal ✓' : 'Choisir ce logo'}
                     </button>
                   )}
 

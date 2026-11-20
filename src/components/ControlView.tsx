@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { QuizState, Player, WinnerHistoryItem, SyncAction } from '../types';
 import { syncService } from '../services/sync';
 import { soundEffects } from '../services/audio';
@@ -42,6 +42,10 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
   const [isCloudConnected, setIsCloudConnected] = useState(false);
   const [history, setHistory] = useState<WinnerHistoryItem[]>(() => syncService.loadHistory());
 
+  // Ref to always have the latest state accessible in listeners without stale closures
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
   // Modals state
   const [showSponsors, setShowSponsors] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -70,8 +74,10 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
     });
 
     const unsubAction = syncService.onAction((action: SyncAction) => {
-      if (action.type === 'PONG') {
+      if (action.type === 'PONG' || action.type === 'STATE_REQUEST') {
         setIsDisplayConnected(true);
+        // Reply with current state so the display is guaranteed up to date
+        syncService.sendAction({ type: 'STATE_UPDATE', payload: stateRef.current });
       }
     });
 
@@ -298,10 +304,11 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
     syncService.saveHistory(nextHistory);
   };
 
-  // Reset / New Round completely
+  // Reset / New Round completely (remet les scores et réinitialise les prénoms des joueurs)
   const handleNewRound = () => {
-    const resetPlayers = state.players.map((p) => ({
+    const resetPlayers = state.players.map((p, index) => ({
       ...p,
+      name: `Joueur ${index + 1}`,
       score: 0,
       status: 'active' as const,
     }));
@@ -565,7 +572,7 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
               type="button"
               onClick={handleNewRound}
               className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg transition-all flex items-center gap-2"
-              title="Raccourci : Touche R (Nouvelle manche complète)"
+              title="Raccourci : Touche R (Nouvelle manche : réinitialise les prénoms et remet les scores à 0)"
             >
               <RotateCcw size={16} />
               <span>Nouvelle Manche</span>
