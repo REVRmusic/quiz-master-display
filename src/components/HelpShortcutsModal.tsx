@@ -9,9 +9,8 @@ export const HelpShortcutsModal: React.FC<HelpShortcutsModalProps> = ({ onClose 
   const shortcuts = [
     { key: '1, 2, 3, 4', desc: '+1 point au Joueur 1, 2, 3 ou 4 directement', badge: 'Score rapide' },
     { key: 'Maj + 1..4', desc: '-1 point (correction en cas d\'erreur)', badge: 'Correction' },
-    { key: '⚡ Buzz', desc: 'Donner la main à un joueur pour répondre (Passe en BLEU)', badge: 'Buzzer' },
+    { key: 'Boutons Buzz', desc: 'Gros bouton rond (1, 2, 3, 4) au-dessus de chaque joueur pour donner la main', badge: 'Buzzer' },
     { key: 'Echap', desc: 'Libérer la main / Annuler le buzzer', badge: 'Buzzer' },
-    { key: 'Espace', desc: 'Démarrer / Mettre en pause le Chronomètre', badge: 'Chrono' },
     { key: 'B', desc: 'Déclencher le son Buzzer (Mauvaise réponse)', badge: 'Audio' },
     { key: 'V ou G', desc: 'Déclencher la pluie de Confettis & Fanfare de Victoire', badge: 'Spectacle' },
     { key: 'R', desc: 'Nouvelle Manche (Remet les scores et les prénoms à zéro)', badge: 'Partie' },

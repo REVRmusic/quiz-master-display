@@ -5,7 +5,6 @@ import { soundEffects } from '../services/audio';
 import { supabaseService } from '../services/supabase';
 import { SponsorManager } from './SponsorManager';
 import { SettingsModal } from './SettingsModal';
-import { TimerWidget } from './TimerWidget';
 import { HistoryModal } from './HistoryModal';
 import { HelpShortcutsModal } from './HelpShortcutsModal';
 import { SqlSetupModal } from './SqlSetupModal';
@@ -129,17 +128,6 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
         } else {
           adjustPlayerScore(state.players[playerIndex].id, 1);
         }
-        return;
-      }
-
-      // Space: Toggle timer
-      if (e.code === 'Space') {
-        e.preventDefault();
-        const nextRunning = !state.timerRunning;
-        updateStateAndBroadcast({
-          timerEnabled: true,
-          timerRunning: nextRunning,
-        });
         return;
       }
 
@@ -644,22 +632,6 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
           </div>
         </div>
 
-        {/* TIMER & QUICK TOOLS ROW */}
-        <TimerWidget
-          enabled={state.timerEnabled}
-          duration={state.timerDuration}
-          remaining={state.timerRemaining}
-          isRunning={state.timerRunning}
-          soundEnabled={state.soundEnabled}
-          onToggleTimer={(enabled) => updateStateAndBroadcast({ timerEnabled: enabled })}
-          onSetDuration={(dur) => updateStateAndBroadcast({ timerDuration: dur })}
-          onSetRemaining={(rem) => updateStateAndBroadcast({ timerRemaining: rem })}
-          onSetRunning={(run) => updateStateAndBroadcast({ timerRunning: run })}
-          onBroadcastTimer={(rem, run) =>
-            updateStateAndBroadcast({ timerRemaining: rem, timerRunning: run })
-          }
-        />
-
         {/* PLAYERS CONTROLLER GRID */}
         <div>
           {/* ANSWERING PLAYER ACTIVE BANNER */}
@@ -733,7 +705,7 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
               Pupitres des Candidats (Touches Clavier 1 à {state.players.length})
             </h3>
             <span className="text-xs text-slate-500">
-              Tapez <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono">1</kbd>, <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono">2</kbd>... pour +1 pt • Bouton <strong className="text-yellow-300">⚡ Buzz</strong> pour donner la main
+              Tapez <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono">1</kbd>, <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-purple-300 font-mono">2</kbd>... pour +1 pt • Gros boutons <strong className="text-amber-300">BUZZ</strong> pour donner la main
             </span>
           </div>
 
@@ -775,139 +747,159 @@ export const ControlView: React.FC<ControlViewProps> = ({ initialState }) => {
                 ? 'text-rose-400 line-through'
                 : 'text-emerald-300 drop-shadow-[0_4px_16px_rgba(52,211,153,0.3)]';
 
+              const buzzerStyle = isAnswering && !isEliminated
+                ? 'bg-gradient-to-b from-yellow-300 via-amber-400 to-yellow-500 text-slate-950 border-yellow-200 ring-4 ring-yellow-400/80 ring-offset-4 ring-offset-slate-950 shadow-[0_0_35px_rgba(250,204,21,0.9)] animate-pulse'
+                : isEliminated
+                ? 'bg-slate-900 border-slate-800 text-slate-600 opacity-30 cursor-not-allowed shadow-none'
+                : isWinner
+                ? 'bg-gradient-to-b from-amber-400 via-yellow-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 border-amber-300 shadow-[0_6px_0_#92400e,0_12px_24px_rgba(245,158,11,0.35)] active:translate-y-1 active:shadow-[0_2px_0_#92400e]'
+                : 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 border-amber-300/90 shadow-[0_6px_0_#92400e,0_12px_24px_rgba(245,158,11,0.35)] active:translate-y-1 active:shadow-[0_2px_0_#92400e]';
+
               return (
-                <div
-                  key={player.id}
-                  className={`rounded-2xl p-4 sm:p-5 border transition-all flex flex-col justify-between shadow-xl relative overflow-hidden ${cardBorder}`}
-                >
-                  {/* Top card bar: Player Index, DMX LED indicator & Status Badge */}
-                  <div className="flex items-center justify-between mb-3 gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-6 h-6 rounded-lg bg-slate-800 text-purple-400 font-mono font-bold text-xs flex items-center justify-center border border-slate-700">
-                        {index + 1}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold ${dmxMeta.pillClass}`}
-                        title={`Éclairage DMX PAR LED : ${dmxMeta.label}`}
-                      >
-                        <span className={`w-2 h-2 rounded-full ${dmxMeta.dotClass}`} />
-                        {dmxMeta.label}
-                      </span>
-                    </div>
-
-                    {/* Status badge */}
-                    {isAnswering && !isEliminated ? (
-                      <span className="px-2 py-0.5 rounded-full bg-sky-400 text-slate-950 font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
-                        ⚡ A la main
-                      </span>
-                    ) : isWinner ? (
-                      <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shadow">
-                        <Trophy size={12} /> Qualifié (3 pts)
-                      </span>
-                    ) : isEliminated ? (
-                      <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white font-bold text-[10px] uppercase tracking-wider">
-                        Éliminé
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-emerald-400/80 uppercase tracking-widest font-mono">
-                        En attente
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Player Name editable input */}
-                  <div className="mb-4">
-                    <input
-                      type="text"
-                      value={player.name}
-                      onChange={(e) => handleRenamePlayer(player.id, e.target.value)}
-                      className="w-full bg-slate-800/80 hover:bg-slate-800 focus:bg-slate-800 border border-slate-700 focus:border-purple-500 rounded-xl px-3 py-1.5 text-sm font-bold text-white text-center focus:outline-none focus:ring-1 focus:ring-purple-500 transition-colors"
-                      placeholder="Nom du joueur"
-                    />
-                  </div>
-
-                  {/* Giant Score */}
-                  <div className="text-center my-2">
-                    <span
-                      className={`font-black text-6xl tracking-tight leading-none ${scoreColor}`}
-                      style={{ fontFamily: 'Outfit, sans-serif' }}
-                    >
-                      {player.score}
-                    </span>
-                  </div>
-
-                  {/* SCORE ACTION BUTTONS: +1, -1, REMISE À 0 */}
-                  <div className="grid grid-cols-3 gap-1.5 mt-4">
-                    <button
-                      type="button"
-                      onClick={() => adjustPlayerScore(player.id, 1)}
-                      className="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg flex items-center justify-center shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
-                      title={`Ajouter 1 point (Touche ${index + 1})`}
-                    >
-                      +1
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => adjustPlayerScore(player.id, -1)}
-                      disabled={player.score <= 0}
-                      className="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-400 font-bold text-base flex items-center justify-center disabled:opacity-30 disabled:pointer-events-none active:scale-95 transition-all"
-                      title="Retirer 1 point (Maj + Touche)"
-                    >
-                      -1
-                    </button>
-
-                    {/* Dedicated Remise à 0 button for this player */}
-                    <button
-                      type="button"
-                      onClick={() => resetPlayerScore(player.id)}
-                      className="py-3 rounded-xl bg-purple-950/70 hover:bg-purple-800 border border-purple-700/60 text-purple-200 hover:text-white font-bold text-xs flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-all"
-                      title="Remettre le score de ce joueur à 0"
-                    >
-                      <RotateCcw size={14} className="text-purple-300" />
-                      <span className="text-[10px] tracking-tight">À zéro</span>
-                    </button>
-                  </div>
-
-                  {/* BOTTOM SECONDARY ACTIONS: Buzzer (Donner la main) / Winner / Eliminate */}
-                  <div className="grid grid-cols-3 gap-1 mt-2.5 pt-2 border-t border-slate-800/80">
+                <div key={player.id} className="flex flex-col gap-3">
+                  {/* GROS BOUTON ROND "BUZZ" AU-DESSUS DU JOUEUR */}
+                  <div className="flex flex-col items-center justify-center pt-1 pb-1">
                     <button
                       type="button"
                       onClick={() => handlePlayerBuzz(player.id)}
                       disabled={isEliminated}
-                      className={`py-1.5 px-1 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1 transition-all disabled:opacity-30 ${
-                        isAnswering
-                          ? 'bg-yellow-400 text-slate-950 shadow-md font-black'
-                          : 'bg-slate-800 hover:bg-yellow-500/20 text-yellow-300 border border-yellow-700/40'
-                      }`}
-                      title={isAnswering ? 'Ce joueur a la main (cliquer pour libérer)' : 'Donner la main / Activer le buzzer (Passe en JAUNE)'}
-                    >
-                      <span>⚡ {isAnswering ? 'Répond' : 'Buzz'}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => declareWinnerManually(player.id)}
-                      className="py-1.5 px-1 rounded-lg text-[11px] font-semibold text-amber-300 hover:bg-amber-950/40 border border-transparent hover:border-amber-800/50 flex items-center justify-center gap-1 transition-colors"
-                      title="Déclarer vainqueur de la manche"
-                    >
-                      <Trophy size={13} />
-                      <span>Gagnant</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => togglePlayerElimination(player.id)}
-                      className={`py-1.5 px-1 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors ${
+                      className={`group relative flex flex-col items-center justify-center w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 transition-all select-none cursor-pointer disabled:cursor-not-allowed ${buzzerStyle}`}
+                      title={
                         isEliminated
-                          ? 'bg-rose-900/60 text-white border border-rose-700'
-                          : 'text-slate-400 hover:text-rose-400 hover:bg-rose-950/30'
-                      }`}
-                      title="Éliminer / Rétablir ce joueur"
+                          ? `Joueur ${index + 1} éliminé`
+                          : isAnswering
+                          ? `Joueur ${index + 1} a la main (cliquer pour libérer)`
+                          : `Donner la main / Buzzer Joueur ${index + 1} (${player.name})`
+                      }
                     >
-                      <UserX size={13} />
-                      <span className="truncate">{isEliminated ? 'Rétablir' : 'Éliminer'}</span>
+                      <span className="text-3xl sm:text-4xl font-black font-mono leading-none tracking-tight">
+                        {index + 1}
+                      </span>
+                      <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest mt-1">
+                        {isAnswering ? '⚡ RÉPOND' : 'BUZZ'}
+                      </span>
                     </button>
+                  </div>
+
+                  {/* CARTE CANDIDAT */}
+                  <div
+                    className={`rounded-2xl p-4 sm:p-5 border transition-all flex flex-col justify-between shadow-xl relative overflow-hidden flex-1 ${cardBorder}`}
+                  >
+                    {/* Top card bar: Player Index, DMX LED indicator & Status Badge */}
+                    <div className="flex items-center justify-between mb-3 gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-6 h-6 rounded-lg bg-slate-800 text-purple-400 font-mono font-bold text-xs flex items-center justify-center border border-slate-700">
+                          #{index + 1}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold ${dmxMeta.pillClass}`}
+                          title={`Éclairage DMX PAR LED : ${dmxMeta.label}`}
+                        >
+                          <span className={`w-2 h-2 rounded-full ${dmxMeta.dotClass}`} />
+                          {dmxMeta.label}
+                        </span>
+                      </div>
+
+                      {/* Status badge */}
+                      {isAnswering && !isEliminated ? (
+                        <span className="px-2 py-0.5 rounded-full bg-sky-400 text-slate-950 font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shadow animate-pulse">
+                          ⚡ A la main
+                        </span>
+                      ) : isWinner ? (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shadow">
+                          <Trophy size={12} /> Qualifié ({state.winScore > 0 ? `${state.winScore} pts` : '3 pts'})
+                        </span>
+                      ) : isEliminated ? (
+                        <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white font-bold text-[10px] uppercase tracking-wider">
+                          Éliminé
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-emerald-400/80 uppercase tracking-widest font-mono">
+                          En attente
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Player Name editable input */}
+                    <div className="mb-4">
+                      <input
+                        type="text"
+                        value={player.name}
+                        onChange={(e) => handleRenamePlayer(player.id, e.target.value)}
+                        className="w-full bg-slate-800/80 hover:bg-slate-800 focus:bg-slate-800 border border-slate-700 focus:border-purple-500 rounded-xl px-3 py-1.5 text-sm font-bold text-white text-center focus:outline-none focus:ring-1 focus:ring-purple-500 transition-colors"
+                        placeholder="Nom du joueur"
+                      />
+                    </div>
+
+                    {/* Giant Score */}
+                    <div className="text-center my-2">
+                      <span
+                        className={`font-black text-6xl tracking-tight leading-none ${scoreColor}`}
+                        style={{ fontFamily: 'Outfit, sans-serif' }}
+                      >
+                        {player.score}
+                      </span>
+                    </div>
+
+                    {/* SCORE ACTION BUTTONS: +1, -1, REMISE À 0 */}
+                    <div className="grid grid-cols-3 gap-1.5 mt-4">
+                      <button
+                        type="button"
+                        onClick={() => adjustPlayerScore(player.id, 1)}
+                        className="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-lg flex items-center justify-center shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
+                        title={`Ajouter 1 point (Touche ${index + 1})`}
+                      >
+                        +1
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => adjustPlayerScore(player.id, -1)}
+                        disabled={player.score <= 0}
+                        className="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-400 font-bold text-base flex items-center justify-center disabled:opacity-30 disabled:pointer-events-none active:scale-95 transition-all"
+                        title="Retirer 1 point (Maj + Touche)"
+                      >
+                        -1
+                      </button>
+
+                      {/* Dedicated Remise à 0 button for this player */}
+                      <button
+                        type="button"
+                        onClick={() => resetPlayerScore(player.id)}
+                        className="py-3 rounded-xl bg-purple-950/70 hover:bg-purple-800 border border-purple-700/60 text-purple-200 hover:text-white font-bold text-xs flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-all"
+                        title="Remettre le score de ce joueur à 0"
+                      >
+                        <RotateCcw size={14} className="text-purple-300" />
+                        <span className="text-[10px] tracking-tight">À zéro</span>
+                      </button>
+                    </div>
+
+                    {/* BOTTOM SECONDARY ACTIONS: Gagnant & Éliminer (2 boutons spacieux) */}
+                    <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-800/80">
+                      <button
+                        type="button"
+                        onClick={() => declareWinnerManually(player.id)}
+                        className="py-2.5 px-2 rounded-xl text-xs font-bold text-amber-300 bg-amber-950/30 hover:bg-amber-900/50 border border-amber-700/50 hover:border-amber-500/80 flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95"
+                        title="Déclarer ce joueur vainqueur de la manche"
+                      >
+                        <Trophy size={15} className="text-amber-400 shrink-0" />
+                        <span>Gagnant</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => togglePlayerElimination(player.id)}
+                        className={`py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 ${
+                          isEliminated
+                            ? 'bg-rose-900/80 hover:bg-rose-800 text-white border border-rose-600'
+                            : 'text-slate-300 hover:text-rose-300 bg-slate-800/80 hover:bg-rose-950/40 border border-slate-700 hover:border-rose-700/60'
+                        }`}
+                        title={isEliminated ? 'Rétablir ce joueur dans la manche' : 'Éliminer ce joueur de la manche'}
+                      >
+                        <UserX size={15} className={isEliminated ? 'text-rose-200 shrink-0' : 'text-slate-400 shrink-0'} />
+                        <span className="truncate">{isEliminated ? 'Rétablir' : 'Éliminer'}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
